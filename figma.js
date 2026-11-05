@@ -157,10 +157,26 @@
   // Each batch is atomized and dropped right away, so memory stays flat.
   async function atomizeFile(data, progress) {
     var emails = data.items.filter(function (x) { return x.kind !== 'part'; }), raw = [], done = 0, i = 0;
-    async function worker() {
+    var limited = false;
+    // A long run can hit Figma's rate limit: wait as long as Figma asks (up to 5 min), retry the same batch, then go one call at a time
+    async function fetchBatch(batch) {
+      var path = '/files/' + data.key + '/nodes?depth=4&ids=' + encodeURIComponent(batch.map(function (e) { return e.id; }).join(','));
+      for (var t = 0; ; t++) {
+        try { return await get(path, 0, { once: true }); }
+        catch (e) {
+          if ((e.code !== 'rate' && e.code !== 'http500' && e.code !== 'http502' && e.code !== 'http503' && e.code !== 'network') || t >= 8) throw e;
+          limited = limited || e.code === 'rate';
+          var wait = Math.min(300, Math.max(e.wait || 0, 15 * (t + 1)));
+          listeners.forEach(function (f) { f(wait, 'Figma asked us to slow down. Atomizing continues in ' + humanWait(wait) + '.'); });
+          await sleep(wait * 1000);
+        }
+      }
+    }
+    async function worker(n) {
       while (i < emails.length) {
+        if (n > 0 && limited) return; // after a rate limit, one worker carries on alone
         var batch = emails.slice(i, i + 10); i += 10;
-        var r = await get('/files/' + data.key + '/nodes?depth=4&ids=' + encodeURIComponent(batch.map(function (e) { return e.id; }).join(',')));
+        var r = await fetchBatch(batch);
         batch.forEach(function (e) {
           var doc = r.nodes && r.nodes[e.id] && r.nodes[e.id].document;
           if (doc) raw = raw.concat(TAS.atomize(doc, { file: data.key, fileName: data.name, brand: e.brand, title: e.title, id: e.id }));
@@ -168,7 +184,7 @@
         done += batch.length; progress && progress(done, emails.length);
       }
     }
-    await Promise.all([worker(), worker()]);
+    await Promise.all([worker(0), worker(1)]);
     var parts = TAS.dedupe(raw);
     var out = { key: data.key, savedAt: Date.now(), emails: emails.length, found: raw.length, parts: parts };
     await idb.set('atoms:' + data.key, out);
