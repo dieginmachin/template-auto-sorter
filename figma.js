@@ -78,7 +78,10 @@
         var nodes = await get('/files/' + key + '/nodes?depth=2&ids=' + encodeURIComponent(part.map(function (p) { return p.id; }).join(',')));
         part.forEach(function (p) {
           var doc = nodes.nodes && nodes.nodes[p.id] && nodes.nodes[p.id].document;
-          if (!doc || !doc.children) return;
+          if (!doc) return;
+          // a cut-off frame that turned out to hold no components is a part itself
+          if (p.self && !TAS.hasComponents(doc)) { items.push(TAS.classifyPart(doc, Object.assign({}, p.ctx, { group: p.pgroup }))); return; }
+          if (!doc.children) return;
           var sub = TAS.collect({ name: file.name, document: { children: [{ name: p.ctx.page, children: [] }] } }, key);
           var ctx = Object.assign({}, p.ctx, { container: p.name });
           items = items.concat(sub.walk(doc.children, ctx));

@@ -435,11 +435,14 @@
           // inside a parts area: sections, level/parts-named frames and frames holding components are containers
           var holder = n.type === 'SECTION' || (boxy && (lvl || isPartsBox(nm) || hasComponents(n)));
           if (holder) {
-            var c1 = Object.assign({}, ctx, { level: lvl || ctx.level, path: path, group: lvl || isPartsBox(nm) ? ctx.group : clean(nm) });
+            var c1 = Object.assign({}, ctx, { level: lvl || ctx.level, path: path, group: lvl || isPartsBox(nm) || (ctx.group && / parts$/i.test(clean(nm))) ? ctx.group : clean(nm) }); // "Hero parts" grid inside the "Hero" group
             if (!n.children) { pending.push({ id: n.id, ctx: c1, name: n.name }); return; }
             if (depth < 6) walk(n.children, c1, depth + 1);
             return;
           }
+          // a frame the API cut off (no children loaded) may be a folder of parts one level too deep
+          // (Parts page > level section > type group > grid > components): open it before deciding
+          if ((n.type === 'FRAME' || n.type === 'GROUP') && (!n.children || n.children.some(function (c) { return (c.type === 'FRAME' || c.type === 'GROUP') && !c.children; }))) { pending.push({ id: n.id, ctx: Object.assign({}, ctx, { path: path, group: clean(nm) }), name: n.name, self: true, pgroup: ctx.group }); return; }
           if (PART_NODES[n.type]) items.push(classifyPart(n, ctx));
           return;
         }
@@ -460,7 +463,7 @@
     return { items: items, pending: pending, walk: function (nodes, ctx) { var before = items.length; walk(nodes, ctx, 1); return items.slice(before); } };
   }
 
-  var API = { clean: clean, classify: classify, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized, atomize: atomize, dedupe: dedupe, levelOf: levelOf, partTitle: partTitle,
+  var API = { clean: clean, classify: classify, classifyPart: classifyPart, hasComponents: hasComponents, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized, atomize: atomize, dedupe: dedupe, levelOf: levelOf, partTitle: partTitle,
     LEVELS: LEVELS.map(function (s) { return s[0]; }), PART_TYPES: PART_TYPES.map(function (s) { return s[0]; }).concat(['Other']),
     SECTIONS: SECTIONS.map(function (s) { return s[0]; }), FLOWS: FLOWS.map(function (s) { return s[0]; }), CATS: CATS.map(function (s) { return s[0]; }) };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TAS = API;
