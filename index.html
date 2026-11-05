@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Template Auto-Sorter</title>
+<meta name="description" content="Connect a Figma file and see every email template sorted by brand, type, category and section on one canvas.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.figma.com; img-src 'self' data: https://*.amazonaws.com https://*.figma.com https://*.figmausercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317904f'/%3E%3Crect x='7' y='7' width='8' height='11' rx='2' fill='%23fff'/%3E%3Crect x='17' y='7' width='8' height='7' rx='2' fill='%23fff' opacity='.7'/%3E%3Crect x='17' y='16' width='8' height='9' rx='2' fill='%23fff'/%3E%3Crect x='7' y='20' width='8' height='5' rx='2' fill='%23fff' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- CONNECT -->
+<main id="connect" hidden>
+  <header class="brand"><span class="mark" aria-hidden="true"></span><span class="brand-n">Template Auto-Sorter</span><span class="brand-by">by Hall Of Templates</span></header>
+  <div class="cwrap">
+    <section class="cintro">
+      <p class="eyebrow"><span class="pulse" aria-hidden="true"></span>AI Template Library Auto-Sorter</p>
+      <h1>Your Figma templates, <em>sorted.</em></h1>
+      <p class="lead">Paste a Figma file link and the sorter reads every email frame in it. Each template goes into a group by <b>brand</b>, <b>campaign or flow</b>, <b>category</b> and the <b>sections</b> it is built from, on one canvas you can drag around. Click any card to open it in Figma.</p>
+      <ul class="cfacts">
+        <li><b>Nothing to install.</b> It runs in this tab.</li>
+        <li><b>Read-only.</b> It never edits your file.</li>
+        <li><b>Private.</b> Your token stays in this browser and is only sent to api.figma.com.</li>
+      </ul>
+    </section>
+    <form id="cform" class="card cform" autocomplete="off" novalidate>
+      <ol class="csteps">
+        <li>
+          <div class="f">
+            <label for="cUrl">Figma file link</label>
+            <textarea id="cUrl" rows="3" spellcheck="false" placeholder="https://www.figma.com/design/AbC123…/My-Templates"></textarea>
+            <small>One link per line if you want to sort several files together.</small>
+          </div>
+        </li>
+        <li>
+          <div class="f">
+            <label for="cTok">Personal access token</label>
+            <div class="tokrow"><input id="cTok" type="password" spellcheck="false" placeholder="figd_…"><button type="button" class="eye" id="cEye" aria-label="Show token">Show</button></div>
+            <small>Figma → Settings → Security → <b>Generate new token</b>. Turn on <b>File content: Read-only</b>. <button type="button" class="link-btn" id="cHow">Show me how</button></small>
+            <div class="how" id="howBox" hidden>
+              <ol>
+                <li>In Figma, click your name (top left) and open <b>Settings</b>.</li>
+                <li>Go to the <b>Security</b> tab and scroll to <b>Personal access tokens</b>.</li>
+                <li>Click <b>Generate new token</b>, name it "Auto-Sorter", set <b>File content</b> to <b>Read-only</b> (leave the rest off), and create it.</li>
+                <li>Copy the token right away (Figma shows it once) and paste it here.</li>
+              </ol>
+            </div>
+          </div>
+          <label class="chk"><input type="checkbox" id="cRem" checked> Remember on this device</label>
+        </li>
+      </ol>
+      <p class="cerr" id="cErr" role="alert" hidden></p>
+      <button class="btn" type="submit" id="cGo">Sort my library<small>Reads your file, sorts every template</small></button>
+      <div class="cprog" id="cProg" hidden><i></i><span id="cProgT">Reading the file structure</span></div>
+    </form>
+  </div>
+  <footer class="ft">Made by Hall Of Templates · Not affiliated with Figma · <button type="button" class="link-btn" id="cForget" hidden>Forget my token and files</button></footer>
+</main>
+
+<!-- THE LIBRARY -->
+<section id="lib" aria-label="Template library" hidden>
+  <div id="libView" tabindex="0" aria-label="Canvas. Drag to move, Ctrl or ⌘ scroll to zoom."><div id="libWorld"></div></div>
+  <canvas id="libLinks" aria-hidden="true"></canvas>
+  <div class="lib-flash" id="libFlash" aria-hidden="true"></div>
+  <header class="lib-top">
+    <div class="lib-l">
+      <button class="lib-pill" id="libMenu" type="button" aria-haspopup="dialog"><span class="mark sm" aria-hidden="true"></span> Files</button>
+      <div class="lib-title"><b id="libName">Template Library</b><span class="lab" id="libSub">Sorted from Figma</span></div>
+    </div>
+    <div class="lib-r">
+      <label class="lib-search"><span class="sr">Search templates</span><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="libQ" type="search" placeholder="Search names" autocomplete="off"></label>
+      <button class="lib-pill" id="libFilterB" type="button" aria-expanded="false" aria-controls="libFilter">Filter<em id="libFN" hidden></em></button>
+      <div class="lib-score" aria-live="polite"><span class="lab">Discovered</span><span class="n"><b id="libSeen">0</b> / <span id="libTot">0</span></span><i class="lib-meter"><i id="libMeter"></i></i></div>
+    </div>
+  </header>
+  <div class="lib-filter" id="libFilter" hidden>
+    <div class="fgrp"><span class="lab">Type</span><div class="fchips" id="fType"></div></div>
+    <div class="fgrp"><span class="lab">Must include these sections</span><div class="fchips" id="fSec"></div></div>
+    <div class="fgrp"><span class="lab">Brand</span><div class="fchips" id="fBrand"></div></div>
+    <div class="frow"><button type="button" class="link-btn" id="fClear">Clear filters</button><span class="lab" id="fCount"></span></div>
+  </div>
+  <p class="lib-hint lab" id="libHint">Drag to move · ⌘ scroll to zoom · Hover to find · Click to open</p>
+  <div class="lib-chips" id="libChips"></div>
+  <nav class="lib-dock" aria-label="Library controls">
+    <span class="lab dl">Group</span>
+    <div class="seg" id="libSeg"></div>
+    <i class="sep"></i>
+    <button type="button" id="libOut" aria-label="Zoom out">−</button><span class="zl tnum" id="libZ">100%</span><button type="button" id="libIn" aria-label="Zoom in">+</button>
+    <button type="button" id="libFit">Fit</button>
+    <button type="button" class="go" id="libDice">Surprise me</button>
+  </nav>
+  <canvas class="lib-mini" id="libMini" aria-label="Minimap. Click to fly there."></canvas>
+  <div class="lib-toast" id="libToast" role="status"></div>
+  <div class="lib-status" id="libStatus" role="status" hidden></div>
+  <div class="lib-empty" id="libEmpty" hidden><b>No templates match.</b><span>Clear the search or filters to see everything.</span></div>
+</section>
+
+<!-- FILES PANEL -->
+<aside id="panel" role="dialog" aria-modal="true" aria-labelledby="panelH" hidden>
+  <div class="pin card">
+    <div class="phead"><h2 id="panelH">Your files</h2><button type="button" class="x" id="panelX" aria-label="Close">×</button></div>
+    <ul class="pfiles" id="pFiles"></ul>
+    <form id="pAdd" class="padd" novalidate><input id="pUrl" placeholder="Paste another Figma file link" spellcheck="false" aria-label="Figma file link"><button type="submit" class="sbtn">Add</button></form>
+    <p class="cerr" id="pErr" role="alert" hidden></p>
+    <div class="pfoot">
+      <button type="button" class="sbtn ghost" id="pRefresh">Re-sort from Figma</button>
+      <button type="button" class="sbtn ghost" id="pToken">Change token</button>
+      <button type="button" class="link-btn" id="pForget">Forget token and files</button>
+    </div>
+    <p class="pnote">Sorted data and thumbnails are cached in this browser so the library opens instantly next time. Re-sort after you add templates in Figma.</p>
+  </div>
+</aside>
+
+<!-- VIEWER -->
+<div id="lb" role="dialog" aria-modal="true" aria-labelledby="lbT" hidden>
+  <div class="lbs" id="lbs"><img id="lbimg" alt=""><div class="lbload" id="lbload">Rendering from Figma…</div></div>
+  <aside class="lbp">
+    <p class="lab" id="lbBrand"></p>
+    <h2 id="lbT"></h2>
+    <p class="lbname" id="lbName"></p>
+    <dl class="lbtags" id="lbTags"></dl>
+    <div class="lbsecs" id="lbSecs"></div>
+    <a class="btn sm" id="lbOpen" target="_blank" rel="noopener">Open in Figma</a>
+    <div class="lbnav"><button type="button" class="sbtn ghost" id="lbPrev">← Prev</button><button type="button" class="sbtn ghost" id="lbNext">Next →</button></div>
+  </aside>
+  <button class="x" id="lbx" type="button" aria-label="Close">×</button>
+</div>
+
+<script src="classify.js"></script>
+<script src="figma.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
