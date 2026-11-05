@@ -156,7 +156,7 @@
   // 10 emails per /nodes call (a call is ~6 MB for image-heavy emails), two at a time.
   // Each batch is atomized and dropped right away, so memory stays flat.
   async function atomizeFile(data, progress) {
-    var emails = data.items.filter(function (x) { return x.kind !== 'part'; }), raw = [], done = 0, i = 0;
+    var emails = data.items.filter(function (x) { return x.kind !== 'part'; }).map(function (x) { return { id: x.id, brand: x.brand, title: x.title }; }), total = emails.length, raw = [], done = 0, i = 0, missing = 0, again = [], retrying = false;
     var limited = false;
     // A long run can hit Figma's rate limit: wait as long as Figma asks (up to 5 min), retry the same batch, then go one call at a time
     async function fetchBatch(batch) {
@@ -180,13 +180,16 @@
         batch.forEach(function (e) {
           var doc = r.nodes && r.nodes[e.id] && r.nodes[e.id].document;
           if (doc) raw = raw.concat(TAS.atomize(doc, { file: data.key, fileName: data.name, brand: e.brand, title: e.title, id: e.id }));
+          else if (retrying) missing++;
+          else again.push(e); // Figma can return an empty node under load: try it once more at the end
         });
-        done += batch.length; progress && progress(done, emails.length);
+        done += batch.length; progress && progress(Math.min(done, total), total);
       }
     }
     await Promise.all([worker(0), worker(1)]);
+    if (again.length) { emails = again; again = []; i = 0; retrying = true; await worker(0); }
     var parts = TAS.dedupe(raw);
-    var out = { key: data.key, savedAt: Date.now(), emails: emails.length, found: raw.length, parts: parts };
+    var out = { key: data.key, savedAt: Date.now(), emails: total, missing: missing, found: raw.length, parts: parts };
     await idb.set('atoms:' + data.key, out);
     return out;
   }
