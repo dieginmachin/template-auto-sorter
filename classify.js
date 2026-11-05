@@ -367,7 +367,8 @@
       var b = box(n);
       out.push(Object.assign({ kind: 'part', origin: 'email', id: n.id, file: meta.file, fileName: meta.fileName, brand: meta.brand, level: level, part: type,
         name: clean(n.name), title: bare(n.name), levelBy: 'layers', fit: b.width >= 480 ? 'Full width' : b.width >= 240 ? 'Half width' : 'Small',
-        folder: meta.brand, where: meta.brand + ' / ' + meta.title, src: meta.title, srcId: meta.id, w: Math.round(b.width), h: Math.round(b.height), fp: fp(level, n) }, extra || {}));
+        folder: meta.brand, where: meta.brand + ' / ' + meta.title, src: meta.title, srcId: meta.id, w: Math.round(b.width), h: Math.round(b.height),
+        fp: (level === 'Atoms' ? meta.brand + '|' : '') + fp(level, n) }, extra || {})); // atoms carry brand styling: never merge across brands
     }
     function atoms(n, d) {
       kids(n).forEach(function (c) {
