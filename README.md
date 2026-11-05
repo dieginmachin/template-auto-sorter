@@ -71,4 +71,6 @@ Read me page, an Emails page (sections "Acme Co" and "Bluleaf", 6 emails built f
 - `figma.js`: REST client, caching, thumbnail queue
 - `classify.js`: the sorting rules (also runs in Node: `require('./classify.js')`)
 
+When you change a `.js` or `.css` file, bump the `?v=` number on its tag in `index.html` so browsers skip their 10-minute cache.
+
 To test locally, serve the folder (`python3 -m http.server`) and use a real token. A fixture-based mock of the API lives outside this repo, because the fixtures contain client names.
