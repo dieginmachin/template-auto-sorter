@@ -47,6 +47,17 @@ Page "Parts"
   Section "Organisms"   → Hero / Split image, Product grid / 2x2, Footer / Standard …
 ```
 
+## Atomize emails (read-only)
+
+In Parts mode, **Atomize emails** breaks every email in the connected files into parts without writing anything to Figma:
+
+- It reads each email's layers with `GET /v1/files/:key/nodes?ids=…&depth=4`, 10 emails per call, two calls at a time, and drops each batch as soon as it's atomized.
+- Emailify structure maps straight onto the Atomic Emails levels: 🚣 rows are **organisms**, 🏛️ columns inside multi-column rows are **molecules**, and 🔗 buttons, tags, logos and social rows are **atoms**. 🎁 wrappers are opened; whole headers and footers stay whole. Files without Emailify names use full-width children as organisms.
+- Identical parts (same name, size, layer structure and text) collapse into one, with a "used in N emails" count and the emails they came from.
+- Results are stored in IndexedDB per file. Cards deep-link to the part inside its email.
+
+On the three 1000 Templates files (832 emails): 18,925 parts found, 8,257 unique (5,103 organisms, 1,573 molecules, 1,581 atoms), in about 7 minutes. To write the parts into Figma as components, use the `atomic-extractor` skill (see `funnels/atomic-emails/skills/atomic-extractor/` in the dembrandt project).
+
 ## Starter file
 
 A Figma file buyers duplicate, built to the rules above: https://www.figma.com/design/CyuSgQXpdVmXA5kkLVhfMK/Auto-Sorter-Starter-File
