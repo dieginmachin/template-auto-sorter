@@ -488,6 +488,12 @@
   /* status line for rate limits */
   var statusEl = $('#libStatus'), stT = 0;
   function note(msg, ms) { statusEl.hidden = false; statusEl.classList.add('warn'); statusEl.textContent = msg; clearTimeout(stT); stT = setTimeout(function () { statusEl.hidden = true; }, ms || 9000); }
+  var rq = $('#libRender'), rqT = 0;
+  FG.onQueue(function (n) {
+    clearTimeout(rqT);
+    if (!n) { rq.hidden = true; return; }
+    rqT = setTimeout(function () { rq.hidden = false; rq.textContent = 'Rendering thumbnails from Figma… ' + n + ' left'; }, rq.hidden ? 2500 : 0);
+  });
   FG.onWait(function (wait, msg) { note(msg || ('Figma asked us to slow down. Thumbnails continue in ' + FG.humanWait(wait) + '.'), Math.min(wait, 60) * 1000 + 3000); });
 
   /* =========================================================

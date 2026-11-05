@@ -38,24 +38,25 @@
   var listeners = [];
   function onWait(fn) { listeners.push(fn); }
 
-  async function get(path, tries) {
-    tries = tries || 0;
+  async function get(path, tries, opt) {
+    tries = tries || 0; opt = opt || {};
     var t = token();
     if (!t) throw FigmaError('Add your Figma access token first.', 'token');
-    var res;
-    try { res = await fetch(API + path, { headers: { 'X-Figma-Token': t } }); }
-    catch (e) { throw FigmaError('Could not reach Figma. Check your connection and try again.', 'network'); }
+    var res, ac = opt.timeout && typeof AbortController !== 'undefined' ? new AbortController() : null, tm = ac ? setTimeout(function () { ac.abort(); }, opt.timeout) : 0;
+    try { res = await fetch(API + path, { headers: { 'X-Figma-Token': t }, signal: ac ? ac.signal : undefined }); }
+    catch (e) { throw FigmaError(e && e.name === 'AbortError' ? 'Figma took too long to render.' : 'Could not reach Figma. Check your connection and try again.', e && e.name === 'AbortError' ? 'timeout' : 'network'); }
+    finally { clearTimeout(tm); }
     if (res.ok) return res.json();
     var body = {}; try { body = await res.json(); } catch (e) {}
     var msg = body.err || body.message || res.statusText;
     if (res.status === 429) {
       var wait = +(res.headers.get('Retry-After') || 0);
-      if (wait && wait <= 120 && tries < 4) { listeners.forEach(function (f) { f(wait); }); await sleep(wait * 1000 + 250); return get(path, tries + 1); }
+      if (wait && wait <= 120 && tries < 4 && !opt.once) { listeners.forEach(function (f) { f(wait); }); await sleep(wait * 1000 + 250); return get(path, tries + 1, opt); }
       throw FigmaError('Figma is rate-limiting this token' + (wait ? ' for about ' + humanWait(wait) : '') + '. Your sorted library stays here; thumbnails will finish later.', 'rate', wait);
     }
     if (res.status === 403) throw FigmaError(/token/i.test(msg) ? 'Figma did not accept that token. Make a new one with "File content: read" access and paste it again.' : 'This token cannot open that file. Make sure the account that owns the token can view it.', 'forbidden');
     if (res.status === 404) throw FigmaError('Figma could not find that file. Check the link.', 'notfound');
-    if (res.status >= 500 && tries < 2) { await sleep(1500 * (tries + 1)); return get(path, tries + 1); }
+    if (res.status >= 500 && tries < 2 && !opt.once) { await sleep(1500 * (tries + 1)); return get(path, tries + 1, opt); }
     throw FigmaError('Figma said: ' + msg, 'http' + res.status);
   }
   function humanWait(s) { return s < 90 ? Math.ceil(s) + ' seconds' : s < 5400 ? Math.ceil(s / 60) + ' minutes' : s < 172800 ? Math.ceil(s / 3600) + ' hours' : Math.ceil(s / 86400) + ' days'; }
@@ -101,7 +102,12 @@
   function ck(id, scale) { return scale && scale !== 0.34 ? id + '@' + scale : id; }
   function thumbFor(key, id, scale) { var c = imgStore(key)[ck(id, scale)]; return c && Date.now() - c[1] < IMG_TTL ? c[0] : null; }
 
-  var queue = {}, waiting = {}, busy = 0, blockedUntil = 0, timer = 0;
+  // Figma renders image-heavy emails slowly (seconds per frame), so batches stay small, four run at once,
+  // and a batch that fails is split and put back at the front instead of holding a slot.
+  var queue = {}, waiting = {}, busy = 0, blockedUntil = 0, timer = 0, MAXBUSY = 4, qListeners = [], size = {};
+  function left() { var n = 0; for (var q in queue) n += queue[q].length; return n; }
+  function tell() { var n = left() + busy; qListeners.forEach(function (f) { f(n); }); }
+  function onQueue(fn) { qListeners.push(fn); }
   // Ask for a thumbnail; cb(url|null) fires once it is known.
   // Requests are batched per file and render scale: "key|scale" -> [ids]
   function thumb(key, id, cb, scale) {
@@ -118,23 +124,24 @@
   async function pump() {
     if (Date.now() < blockedUntil) { clearTimeout(timer); timer = setTimeout(pump, blockedUntil - Date.now() + 50); return; }
     var keys = Object.keys(queue).filter(function (k) { return queue[k].length; });
-    while (busy < 2 && keys.length) {
-      var key = keys[0], ids = queue[key].splice(0, 60);
+    while (busy < MAXBUSY && keys.length) {
+      var key = keys[0], ids = queue[key].splice(0, size[key] || (+key.split('|')[1] === 0.34 ? 8 : 24));
       if (!queue[key].length) keys.shift();
-      busy++; fetchBatch(key, ids).finally(function () { busy--; pump(); });
+      busy++; fetchBatch(key, ids).finally(function () { busy--; tell(); pump(); });
     }
+    tell();
   }
   async function fetchBatch(qk, ids) {
     var key = qk.split('|')[0], scale = +qk.split('|')[1] || 0.34;
     try {
       // parts can be transparent, so they render as PNG; emails as smaller JPGs
-      var r = await get('/images/' + key + '?scale=' + scale + '&format=' + (scale === 0.34 ? 'jpg' : 'png') + '&ids=' + encodeURIComponent(ids.join(',')));
+      var r = await get('/images/' + key + '?scale=' + scale + '&format=' + (scale === 0.34 ? 'jpg' : 'png') + '&ids=' + encodeURIComponent(ids.join(',')), 0, { timeout: 120000, once: true });
       var c = imgStore(key), now = Date.now();
       ids.forEach(function (id) { var u = r.images && r.images[id]; if (u) c[ck(id, scale)] = [u, now]; resolve(qk, id, u || null); });
       imgSave(key);
     } catch (e) {
       if (e.code === 'rate') { blockedUntil = Date.now() + Math.min(e.wait || 60, 3600) * 1000; queue[qk] = ids.concat(queue[qk] || []); listeners.forEach(function (f) { f(e.wait || 60, e.message); }); return; }
-      if (ids.length > 6) { var h = Math.ceil(ids.length / 2); await fetchBatch(qk, ids.slice(0, h)); await fetchBatch(qk, ids.slice(h)); return; }
+      if (ids.length > 1) { size[qk] = Math.ceil(ids.length / 2); queue[qk] = ids.concat(queue[qk] || []); return; } // retry in smaller batches
       ids.forEach(function (id) { resolve(qk, id, null); });
     }
   }
@@ -150,5 +157,5 @@
   function forgetAll() { files().forEach(function (f) { forget(f.key); }); store('files', null); store('seen', null); setToken(''); }
 
   root.FG = { token: token, setToken: setToken, parseUrl: parseUrl, nodeUrl: nodeUrl, loadFile: loadFile, cached: cached, thumb: thumb, thumbFor: thumbFor, cancel: cancel, full: full,
-    files: files, forget: forget, forgetAll: forgetAll, onWait: onWait, store: store, humanWait: humanWait };
+    files: files, forget: forget, forgetAll: forgetAll, onWait: onWait, onQueue: onQueue, store: store, humanWait: humanWait };
 })(this);
