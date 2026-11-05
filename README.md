@@ -47,6 +47,11 @@ Page "Parts"
   Section "Organisms"   → Hero / Split image, Product grid / 2x2, Footer / Standard …
 ```
 
+## Starter file
+
+A Figma file buyers duplicate, built to the rules above: https://www.figma.com/design/CyuSgQXpdVmXA5kkLVhfMK/Auto-Sorter-Starter-File
+Read me page, an Emails page (sections "Acme Co" and "Bluleaf", 6 emails built from organism instances) and a Parts page (Atoms, Molecules, Organisms as components; molecules use atom instances, organisms use molecule instances). The live sorter reads it as 6 emails (4 campaigns, 2 flows) and 23 parts, every level from names.
+
 ## Files
 
 - `index.html`: markup and CSP

@@ -37,6 +37,10 @@ h1 em{font-style:normal;color:var(--green)}
 .cfacts li{position:relative;padding-left:32px;color:var(--muted);font-size:15.5px}
 .cfacts li::before{content:"";position:absolute;left:0;top:2px;width:20px;height:20px;border-radius:50%;background:var(--cta) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.5l4.5-5' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat}
 .cfacts b{color:var(--text);font-weight:600}
+.starter{display:flex;gap:14px;align-items:flex-start;margin-top:28px;padding:16px 18px;background:#fff;border:1px solid var(--line-2);border-radius:16px;color:var(--muted);font-size:15px;line-height:1.5;text-decoration:none;max-width:560px;transition:border-color .2s,transform .3s var(--ease)}
+.starter:hover{border-color:var(--green);transform:translateY(-2px)}
+.starter b{color:var(--text);font-weight:700;display:block}
+.starter .mark{margin-top:2px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
 .cform{padding:28px;display:grid;gap:22px}
 .csteps{list-style:none;margin:0;padding:0;display:grid;gap:22px;counter-reset:s}
