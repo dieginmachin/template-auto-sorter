@@ -80,28 +80,43 @@
   var MODES = {
     email: { noun: 'template', groups: [['all', 'All'], ['brand', 'Brand'], ['type', 'Type'], ['category', 'Category'], ['signature', 'Section'], ['lang', 'Language'], ['year', 'Year'], ['length', 'Length'], ['fileName', 'File']],
       filters: [['type', 'Type'], ['sections', 'Must include these sections', 1], ['brand', 'Brand']], def: 'brand' },
-    part: { noun: 'part', groups: [['all', 'All'], ['level', 'Level'], ['part', 'Type'], ['folder', 'Folder'], ['brand', 'Brand'], ['fit', 'Width'], ['fileName', 'File']],
-      filters: [['level', 'Level'], ['part', 'Type'], ['folder', 'Folder'], ['brand', 'Brand']], def: 'level' }
+    part: { noun: 'part', groups: [['all', 'All'], ['level', 'Level'], ['part', 'Type'], ['brand', 'Brand'], ['usesBand', 'Used in'], ['source', 'Source'], ['folder', 'Folder'], ['fit', 'Width'], ['fileName', 'File']],
+      filters: [['level', 'Level'], ['part', 'Type'], ['usesBand', 'Used in'], ['brand', 'Brand'], ['source', 'Source']], def: 'level' }
   };
-  var LABEL = { brand: 'Brand', type: 'Type', category: 'Category', signature: 'Signature section', lang: 'Language', year: 'Year', length: 'Length', fileName: 'File', level: 'Level', part: 'Type', folder: 'Folder', fit: 'Width' };
+  var LABEL = { brand: 'Brand', type: 'Type', category: 'Category', signature: 'Signature section', lang: 'Language', year: 'Year', length: 'Length', fileName: 'File', level: 'Level', part: 'Type', folder: 'Folder', fit: 'Width', usesBand: 'Used in', source: 'Source' };
   var ALL = [], A = [], V = [], N = 0, els = [], lay = null, TW = 1, TH = 1, mode = 'email', group = 'brand', cam = { x: 0, y: 0, z: 1 }, zmin = .08, zmax = 2.6, vw = 0, vh = 0, isOpen = false, introduced = false, nFiles = 1;
   var seen = FG.store('seen') || {};
   var F = { q: '', sel: {} };
   var io = null;
-  var GROUPS = MODES.email.groups;
+  var GROUPS = MODES.email.groups, SETS = [];
+  // Atomized parts live in IndexedDB; merge them in when they're there
+  function loadAtoms() {
+    Promise.all(SETS.map(function (d) { return FG.atoms(d.key); })).then(function (list) {
+      var got = list.filter(Boolean); if (!got.length) { atomBtn(); return; }
+      ALL = ALL.filter(function (a) { return a.origin !== 'email'; });
+      got.forEach(function (r) { r.parts.forEach(function (p) { p.source = 'Atomized from emails'; ALL.push(p); }); });
+      counts2(); atomBtn(got); if (mode === 'part') setMode('part', true);
+    });
+  }
+  function counts2() {
+    var ne = ALL.filter(function (a) { return a.kind === 'email'; }).length, np = ALL.length - ne;
+    $('#mEmailN').textContent = ne; $('#mPartN').textContent = np;
+    $('#libSub').textContent = [ne ? plural(ne, 'template') : '', np ? plural(np, 'part') : '', plural(SETS.length, 'file')].filter(Boolean).join(' · ');
+  }
+  function atomBtn(got) { var b = $('#libAtomize'); b.hidden = mode !== 'part'; b.textContent = got && got.length ? 'Re-atomize emails' : 'Atomize emails'; }
 
   function sid(a) { return a.file + '|' + a.id; }
   function pref(k, v) { try { if (v === undefined) return localStorage.getItem('tas:v1:' + k); localStorage.setItem('tas:v1:' + k, v); } catch (e) { return null; } }
 
   function setData(sets) {
     ALL = []; sets.forEach(function (d) { ALL = ALL.concat(d.items); });
-    ALL.forEach(function (a) { if (!a.kind) a.kind = 'email'; }); // cached before parts mode existed
+    ALL.forEach(function (a) { if (!a.kind) a.kind = 'email'; if (a.kind === 'part') { a.source = 'Parts page'; a.usesBand = a.usesBand || 'Parts page'; } }); // cached before parts mode existed
+    SETS = sets; loadAtoms();
     TAS.mergeBrands(ALL); // the same brand spelled two ways in two files
     nFiles = sets.length;
-    var ne = ALL.filter(function (a) { return a.kind === 'email'; }).length, np = ALL.length - ne;
+    var ne = 0, np = 0;
     $('#libName').textContent = sets.length === 1 ? sets[0].name : 'Template Library';
-    $('#libSub').textContent = [ne ? plural(ne, 'template') : '', np ? plural(np, 'part') : '', plural(sets.length, 'file')].filter(Boolean).join(' · ');
-    $('#mEmailN').textContent = ne; $('#mPartN').textContent = np;
+    counts2(); ne = +$('#mEmailN').textContent; np = +$('#mPartN').textContent;
     var m = pref('mode'); if (m !== 'part' && m !== 'email') m = 'email';
     if (m === 'email' && !ne && np) m = 'part'; if (m === 'part' && !np && ne) m = 'email';
     setMode(m, true);
@@ -112,15 +127,16 @@
     mode = m; pref('mode', m); GROUPS = MODES[m].groups;
     $$('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.m === m); });
     A = ALL.filter(function (a) { return a.kind === m; });
+    atomBtn(ALL.some(function (a) { return a.origin === 'email'; }) ? [1] : null);
     A.sort(m === 'part'
-      ? function (a, b) { return TAS.LEVELS.indexOf(a.level) - TAS.LEVELS.indexOf(b.level) || a.part.localeCompare(b.part) || a.title.localeCompare(b.title); }
+      ? function (a, b) { return TAS.LEVELS.indexOf(a.level) - TAS.LEVELS.indexOf(b.level) || a.part.localeCompare(b.part) || (b.uses || 0) - (a.uses || 0) || a.title.localeCompare(b.title); }
       : function (a, b) { return a.brand.localeCompare(b.brand) || b.date - a.date || a.title.localeCompare(b.title); });
     N = A.length;
     var g = pref('group:' + m); group = g && GROUPS.some(function (x) { return x[0] === g; }) ? g : MODES[m].def;
     if (group === 'fileName' && nFiles < 2) group = MODES[m].def;
     buildSeg(); build(); buildFilters(); applyFilter(false);
     $('#libEmpty').innerHTML = N ? '<b>No ' + MODES[m].noun + 's match.</b><span>Clear the search or filters to see everything.</span>'
-      : m === 'part' ? '<b>No parts yet.</b><span>Put your atoms, molecules and organisms on a page or section named <i>Parts</i>, with sections named <i>Atoms</i>, <i>Molecules</i> and <i>Organisms</i>. Components anywhere in the file count too. Then Files → Re-sort from Figma.</span>'
+      : m === 'part' ? '<b>No parts yet.</b><span>Click <i>Atomize emails</i> to break every email into organisms, molecules and atoms. Or keep your own on a page named <i>Parts</i>, with sections named <i>Atoms</i>, <i>Molecules</i> and <i>Organisms</i>, then Files → Re-sort from Figma.</span>'
       : '<b>No email templates here.</b><span>Emails are frames 320–900px wide and taller than they are wide.</span>';
     if (isOpen) { introduced = false; lib.open(); }
   }
@@ -137,7 +153,7 @@
       var right = part ? '<span class="lv lv-' + a.level.charAt(0).toLowerCase() + '">' + esc(a.level.replace(/s$/, '')) + '</span>'
         : '<span class="' + (a.type === 'Flow' ? 'fl' : '') + '">' + (a.type === 'Flow' ? 'Flow' : esc(a.year === 'Undated' ? 'Campaign' : a.year)) + '</span>';
       d.innerHTML = '<div class="lc-in"><div class="lc-img' + (part ? ' fit' : '') + '"><img alt="" draggable="false" decoding="async"><div class="ph"><span>' + esc(part ? a.part : a.category) + '</span><b>' + esc(a.title) + '</b></div></div>' +
-        '<div class="lc-meta"><span>' + esc(part ? a.part : a.brand) + '</span>' + right + '</div>' +
+        '<div class="lc-meta"><span>' + esc(part ? a.part : a.brand) + (a.uses > 1 ? ' · ×' + a.uses : '') + '</span>' + right + '</div>' +
         '<div class="lc-t">' + esc(a.title) + '</div><i class="lc-dot"></i></div>';
       frag.appendChild(d); return d;
     });
@@ -146,7 +162,7 @@
     els.forEach(function (el) { io.observe(el); });
   }
   // Parts come in every size: render each so its long side is ~400px (emails stay at 0.34 of 600px)
-  function thumbScale(a) { if (a.kind !== 'part') return 0.34; return Math.max(0.25, Math.min(4, Math.round(400 / Math.max(a.w, a.h, 1) * 4) / 4)); }
+  function thumbScale(a) { if (a.kind !== 'part' || (a.origin === 'email' && a.w >= 480)) return 0.34; return Math.max(0.25, Math.min(4, Math.round(400 / Math.max(a.w, a.h, 1) * 4) / 4)); }
 
   /* thumbnails load as cards come near the viewport */
   function onSee(entries) {
@@ -398,7 +414,21 @@
       b.addEventListener('click', function () { setGroup(g[0]); }); seg.appendChild(b);
     });
   }
-  $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.m); }); });
+  $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.m); atomBtn(ALL.some(function (a) { return a.origin === 'email'; }) ? [1] : null); }); });
+  var atomizing = false;
+  async function runAtomize() {
+    if (atomizing) return; atomizing = true; var b = $('#libAtomize'); b.disabled = true;
+    try {
+      for (var i = 0; i < SETS.length; i++) {
+        var d = SETS[i];
+        await FG.atomizeFile(d, function (n, t) { rq.hidden = false; rq.textContent = 'Atomizing ' + d.name + ' · ' + n + ' / ' + t + ' emails'; });
+      }
+      rq.hidden = true; loadAtoms(); toast('Atomized. Every email is now organisms, molecules and atoms.');
+    } catch (e) { rq.hidden = true; note(e.message, 12000); }
+    atomizing = false; b.disabled = false;
+  }
+  $('#libAtomize').addEventListener('click', runAtomize);
+  $('#libEmpty').addEventListener('click', function (e) { if (e.target.closest('i') && /Atomize/.test(e.target.textContent)) runAtomize(); });
   function setGroup(g) {
     if (g === group) return; group = g; $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.g === g); });
     pref('group:' + mode, g);
@@ -490,6 +520,7 @@
   function note(msg, ms) { statusEl.hidden = false; statusEl.classList.add('warn'); statusEl.textContent = msg; clearTimeout(stT); stT = setTimeout(function () { statusEl.hidden = true; }, ms || 9000); }
   var rq = $('#libRender'), rqT = 0;
   FG.onQueue(function (n) {
+    if (atomizing) return;
     clearTimeout(rqT);
     if (!n) { rq.hidden = true; return; }
     rqT = setTimeout(function () { rq.hidden = false; rq.textContent = 'Rendering thumbnails from Figma… ' + n + ' left'; }, rq.hidden ? 2500 : 0);
@@ -508,17 +539,20 @@
       $('#lbT').textContent = a.title; $('#lbName').textContent = a.name;
       var part = a.kind === 'part';
       var rows = part
-        ? [['Level', a.level.replace(/s$/, '') + (a.levelBy === 'size' ? ' (by size)' : '')], ['Type', a.part], ['Folder', a.folder], ['Size', a.w + ' × ' + a.h + ' · ' + a.fit]].concat(a.variants ? [['Variants', a.variants]] : []).concat(a.where ? [['Found in', a.where]] : [])
+        ? (a.origin === 'email'
+          ? [['Level', a.level.replace(/s$/, '')], ['Type', a.part], ['Brand', a.brand], ['Used in', plural(a.uses || 1, 'email')], ['Size', a.w + ' × ' + a.h], ['From', (a.srcs || [a.src]).join(' · ') + (a.uses > (a.srcs || []).length ? ' …' : '')]]
+          : [['Level', a.level.replace(/s$/, '') + (a.levelBy === 'size' ? ' (by size)' : '')], ['Type', a.part], ['Folder', a.folder], ['Size', a.w + ' × ' + a.h + ' · ' + a.fit]].concat(a.variants ? [['Variants', a.variants]] : []).concat(a.where ? [['Found in', a.where]] : []))
         : [['Type', a.type], ['Category', a.category], ['Language', a.lang], ['Date', a.date && a.date % 10000 ? fmtDate(a.date) : a.year], ['Size', a.w + ' × ' + a.h + ' · ' + a.length]];
       $('#lbTags').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('');
       $('#lbSecs').innerHTML = part ? '' : a.sections.length ? a.sections.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') : '<span>No named blocks</span>';
       $('#lbs').classList.toggle('partv', part);
       img.style.width = Math.min(600, part ? a.w : 600) + 'px';
+      $('#lbOpen').textContent = part && a.origin === 'email' ? 'Open in its email in Figma' : 'Open in Figma';
       $('#lbOpen').href = FG.nodeUrl(a.file, a.id);
       img.removeAttribute('src'); img.alt = a.title; ld.hidden = false; ld.textContent = 'Rendering from Figma…';
       var sc = thumbScale(a), th = FG.thumbFor(a.file, a.id, sc); if (th) img.src = th;
       $('#lbs').scrollTop = 0;
-      FG.full(a.file, a.id, part ? Math.min(4, Math.max(1, Math.round(1200 / Math.max(a.w, a.h, 1)))) : 1).then(function (u) { if (t !== tok) return; if (u) { var im = new Image(); im.onload = function () { if (t === tok) { img.src = u; ld.hidden = true; } }; im.src = u; } else ld.textContent = 'Figma could not render this frame.'; })
+      FG.full(a.file, a.id, part && a.origin === 'email' && a.w >= 480 ? 1 : part ? Math.min(4, Math.max(1, Math.round(1200 / Math.max(a.w, a.h, 1)))) : 1).then(function (u) { if (t !== tok) return; if (u) { var im = new Image(); im.onload = function () { if (t === tok) { img.src = u; ld.hidden = true; } }; im.src = u; } else ld.textContent = 'Figma could not render this frame.'; })
         .catch(function (e) { if (t === tok) { ld.textContent = e.message; ld.hidden = false; } if (th) ld.hidden = true; });
       $('#lbx').focus({ preventScroll: true });
     }

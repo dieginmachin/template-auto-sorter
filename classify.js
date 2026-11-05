@@ -319,6 +319,95 @@
     };
   }
 
+  /* ---------- Atomize: break emails into organisms, molecules and atoms ----------
+     Reads the email's own layer tree (REST /nodes, depth 4). Emailify files map 1:1 onto Atomic Emails:
+     🚣 rows = organisms (sections), 🏛️ columns in multi-column rows = molecules (containers),
+     🔗 buttons, tags, logos, icons = atoms (elements). 🎁 wrappers are opened, except whole footers/headers.
+     Other files: the email's full-width children are organisms, cards inside them are molecules.
+     Identical parts (same name, size, structure and text) collapse into one, with a "used in" count. */
+  var ORG_TYPES = [
+    ['Announcement bar', /announcement|alert bar|pre-?header|ticker|top bar/i],
+    ['Header & logo', /header|\blogo\b|\bnav\b|navigation|menu/i],
+    ['Footer', /footer|unsubscribe|legal/i],
+    ['Hero', /hero|banner|above the fold/i],
+    ['Product grid', /product|klaviyo|feed|\bshop\b|catalog|collection/i],
+    ['Reviews', /review|testimon|rating|social proof|trust ?pilot|\bugc\b/i],
+    ['Discount code', /discount|coupon|promo code|c[oó]digo|voucher/i],
+    ['Countdown', /countdown|timer/i],
+    ['Articles & listicle', /article|blog|listicle/i],
+    ['Bento', /bento/i],
+    ['Video', /video|\bgif\b/i],
+    ['Features & USPs', /\busps?\b|feature|icon|benefit|table|shipping|calendar|guarantee/i],
+    ['Image gallery', /gallery|full image|\bimages?\b|photo|two images|captioned/i],
+    ['Text & CTA', /title|paragraph|text|heading|headline|button|\bcta\b|copy|split/i],
+    ['Custom code', /custom code|code block/i],
+    ['Divider & spacer', /spacer|divider|separator/i]
+  ];
+  var GIFT = /\u{1F381}/u, ROW = /\u{1F6A3}/u, COL = /\u{1F3DB}/u, LINK = /\u{1F517}/u;
+  function bare(name) { return clean(name).replace(/\((row|wrapper|wrapped)[^)]*\)/ig, '').replace(/\((for )?content (columns|elements)\)/ig, '').replace(/\s+/g, ' ').trim() || clean(name); }
+  function kids(n) { return (n.children || []).filter(function (c) { return c.visible !== false; }); }
+  function texts(n, out, d) { out = out || []; d = d || 0; if (n.type === 'TEXT' && n.characters) out.push(n.characters); if (d < 6) kids(n).forEach(function (c) { texts(c, out, d + 1); }); return out; }
+  function hash(str) { var h = 5381; for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  function fp(level, n) {
+    var b = box(n), sig = kids(n).map(function (c) { return bare(c.name).toLowerCase().replace(/\d+/g, '#'); }).join(',');
+    return level + '|' + bare(n.name).toLowerCase().replace(/\d+/g, '#') + '|' + Math.round(b.width / 2) + 'x' + Math.round(b.height / 2) + '|' + sig + '|' + hash(texts(n).join('¦').slice(0, 400));
+  }
+  function recipe(col) { // what a container holds: "Image + text + button"
+    var has = {}, walk = function (n, d) { var nm = clean(n.name).toLowerCase(); if (n.type === 'TEXT') has.text = 1; else if (LINK.test(n.name) || /button|\bbtn\b|\bcta\b/.test(nm)) has.button = 1; else if (/image|img|photo|\u{1F4F7}/u.test(nm) || n.type === 'RECTANGLE') has.image = 1; else if (/table/.test(nm)) has.table = 1; if (d < 3) kids(n).forEach(function (c) { walk(c, d + 1); }); };
+    kids(col).forEach(function (c) { walk(c, 0); });
+    if (has.table) return 'Table';
+    var parts = []; if (has.image) parts.push('Image'); if (has.text) parts.push('text'); if (has.button) parts.push('button');
+    if (!parts.length) return 'Other';
+    var s = parts.join(' + '); return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function atomize(email, meta) {
+    var out = [], eb = box(email), W = eb.width || 600;
+    function rec(n, level, type, extra) {
+      var b = box(n);
+      out.push(Object.assign({ kind: 'part', origin: 'email', id: n.id, file: meta.file, fileName: meta.fileName, brand: meta.brand, level: level, part: type,
+        name: clean(n.name), title: bare(n.name), levelBy: 'layers', fit: b.width >= 480 ? 'Full width' : b.width >= 240 ? 'Half width' : 'Small',
+        folder: meta.brand, where: meta.brand + ' / ' + meta.title, src: meta.title, srcId: meta.id, w: Math.round(b.width), h: Math.round(b.height), fp: fp(level, n) }, extra || {}));
+    }
+    function atoms(n, d) {
+      kids(n).forEach(function (c) {
+        var nm = clean(c.name).toLowerCase(), t = null;
+        if (LINK.test(c.name) || /^(button|btn|cta)\b/.test(nm)) t = 'Button & CTA';
+        else if (/\b(tag|badge|label|pill|sticker)\b/.test(nm) && c.type !== 'TEXT') t = 'Badge & label';
+        else if (/\blogo\b/.test(nm) && c.type !== 'TEXT') t = 'Logo';
+        else if (/social/.test(nm)) t = 'Social icons';
+        if (t) rec(c, 'Atoms', t); else if (d < 4 && c.type !== 'INSTANCE' && c.type !== 'TEXT') atoms(c, d + 1);
+      });
+    }
+    function organism(n) {
+      var nm = bare(n.name), type = first(ORG_TYPES, nm);
+      var cols = kids(n).filter(function (c) { return COL.test(c.name) || (/column/i.test(c.name)); });
+      if (!cols.length) cols = kids(n).filter(function (c) { return c.type !== 'TEXT' && box(c).width < W * 0.6 && box(c).height > 40; });
+      if (!type) type = cols.length >= 2 ? (recipe(cols[0]).indexOf('button') > -1 && recipe(cols[0]).indexOf('Image') === 0 ? 'Product grid' : 'Image gallery') : 'Other';
+      rec(n, 'Organisms', type);
+      if (cols.length >= 2) cols.forEach(function (c) { var r = recipe(c); rec(c, 'Molecules', r === 'Image + text + button' ? 'Card (image, text, button)' : r, { title: r + ' · ' + nm }); });
+      atoms(n, 0);
+    }
+    kids(email).forEach(function (c) {
+      if (c.type === 'TEXT' || c.type === 'VECTOR') return;
+      var nm = bare(c.name), whole = /footer|header/i.test(nm);
+      var isWrap = !whole && (GIFT.test(c.name) || /wrapper|layouts?\s*\//i.test(c.name)) && kids(c).filter(function (k) { return box(k).width >= W * 0.8; }).length >= 2;
+      if (isWrap) kids(c).forEach(function (k) { if (k.type !== 'TEXT') organism(k); });
+      else if (box(c).width >= W * 0.8) organism(c);
+    });
+    return out;
+  }
+  // Collapse repeats; keep the first one and count where it was used.
+  function dedupe(parts) {
+    var by = {}, outp = [];
+    parts.forEach(function (p) {
+      var k = p.fp, hit = by[k];
+      if (!hit) { p.uses = 1; p.srcs = [p.src]; by[k] = p; outp.push(p); return; }
+      if (hit.srcs.indexOf(p.src) < 0) { hit.uses++; if (hit.srcs.length < 6) hit.srcs.push(p.src); }
+    });
+    outp.forEach(function (p) { delete p.fp; p.usesBand = p.uses >= 20 ? '20+ emails' : p.uses >= 5 ? '5–19 emails' : p.uses >= 2 ? '2–4 emails' : '1 email'; });
+    return outp;
+  }
+
   /* ---------- walk a whole file ---------- */
   // Returns { items, sectionsToExpand } — SECTIONs whose children were cut off by the depth limit.
   function collect(file, fileKey) {
@@ -362,7 +451,7 @@
     return { items: items, pending: pending, walk: function (nodes, ctx) { var before = items.length; walk(nodes, ctx, 1); return items.slice(before); } };
   }
 
-  var API = { clean: clean, classify: classify, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized, levelOf: levelOf, partTitle: partTitle,
+  var API = { clean: clean, classify: classify, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized, atomize: atomize, dedupe: dedupe, levelOf: levelOf, partTitle: partTitle,
     LEVELS: LEVELS.map(function (s) { return s[0]; }), PART_TYPES: PART_TYPES.map(function (s) { return s[0]; }).concat(['Other']),
     SECTIONS: SECTIONS.map(function (s) { return s[0]; }), FLOWS: FLOWS.map(function (s) { return s[0]; }), CATS: CATS.map(function (s) { return s[0]; }) };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TAS = API;

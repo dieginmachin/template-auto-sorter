@@ -151,11 +151,44 @@
     return r.images && r.images[id];
   }
 
+  /* ---------- atomize: read every email's layers and break it into parts ---------- */
+  // 10 emails per /nodes call (a call is ~6 MB for image-heavy emails), two at a time.
+  // Each batch is atomized and dropped right away, so memory stays flat.
+  async function atomizeFile(data, progress) {
+    var emails = data.items.filter(function (x) { return x.kind !== 'part'; }), raw = [], done = 0, i = 0;
+    async function worker() {
+      while (i < emails.length) {
+        var batch = emails.slice(i, i + 10); i += 10;
+        var r = await get('/files/' + data.key + '/nodes?depth=4&ids=' + encodeURIComponent(batch.map(function (e) { return e.id; }).join(',')));
+        batch.forEach(function (e) {
+          var doc = r.nodes && r.nodes[e.id] && r.nodes[e.id].document;
+          if (doc) raw = raw.concat(TAS.atomize(doc, { file: data.key, fileName: data.name, brand: e.brand, title: e.title, id: e.id }));
+        });
+        done += batch.length; progress && progress(done, emails.length);
+      }
+    }
+    await Promise.all([worker(), worker()]);
+    var parts = TAS.dedupe(raw);
+    var out = { key: data.key, savedAt: Date.now(), emails: emails.length, found: raw.length, parts: parts };
+    await idb.set('atoms:' + data.key, out);
+    return out;
+  }
+  // a tiny IndexedDB key-value store: atomized libraries are too big for localStorage
+  var idb = (function () {
+    var dbp = null;
+    function db() { return dbp || (dbp = new Promise(function (res, rej) { var r = indexedDB.open('tas', 1); r.onupgradeneeded = function () { r.result.createObjectStore('kv'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; })); }
+    function tx(mode, fn) { return db().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction('kv', mode), q = fn(t.objectStore('kv')); t.oncomplete = function () { res(q && q.result); }; t.onerror = function () { rej(t.error); }; }); }); }
+    return { get: function (k) { return tx('readonly', function (s) { return s.get(k); }).catch(function () { return null; }); },
+      set: function (k, v) { return tx('readwrite', function (s) { s.put(v, k); }).catch(function () {}); },
+      del: function (k) { return tx('readwrite', function (s) { s.delete(k); }).catch(function () {}); } };
+  })();
+  function atoms(key) { return idb.get('atoms:' + key); }
+
   /* ---------- the saved list of files ---------- */
   function files(v) { if (v === undefined) return store('files') || []; store('files', v); }
-  function forget(key) { store('data:' + key, null); store('img:' + key, null); delete imgCache[key]; }
+  function forget(key) { store('data:' + key, null); store('img:' + key, null); delete imgCache[key]; idb.del('atoms:' + key); }
   function forgetAll() { files().forEach(function (f) { forget(f.key); }); store('files', null); store('seen', null); setToken(''); }
 
   root.FG = { token: token, setToken: setToken, parseUrl: parseUrl, nodeUrl: nodeUrl, loadFile: loadFile, cached: cached, thumb: thumb, thumbFor: thumbFor, cancel: cancel, full: full,
-    files: files, forget: forget, forgetAll: forgetAll, onWait: onWait, onQueue: onQueue, store: store, humanWait: humanWait };
+    files: files, forget: forget, forgetAll: forgetAll, onWait: onWait, onQueue: onQueue, atomizeFile: atomizeFile, atoms: atoms, store: store, humanWait: humanWait };
 })(this);
