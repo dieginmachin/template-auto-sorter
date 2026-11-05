@@ -295,7 +295,8 @@
   // "Atoms", "01 — Atoms", "Atoms (buttons)" name a level box; "Atom / Button" names a part
   function levelBox(name) { var t = lead(name); for (var i = 0; i < LEVELS.length; i++) { var m = t.match(LEVELS[i][1]); if (m) return /^\s*(\(.*\))?\s*$/.test(t.slice(m[0].length)) ? LEVELS[i][0] : null; } return null; }
   function isPartsBox(name) { return PARTS_BOX.test(lead(name)); }
-  function hasComponents(n) { return (n.children || []).some(function (c) { return c.type === 'COMPONENT' || c.type === 'COMPONENT_SET'; }); }
+  // a folder of parts: components directly inside, or one level down (label + grid, as atomic-extractor lays them out)
+  function hasComponents(n, d) { return (n.children || []).some(function (c) { return c.type === 'COMPONENT' || c.type === 'COMPONENT_SET' || (!d && (c.type === 'FRAME' || c.type === 'GROUP') && hasComponents(c, 1)); }); }
   function partTitle(name) {
     var segs = clean(name).split(/\s*[\/|]\s*/).filter(Boolean);
     if (segs.length > 1 && levelOf(segs[0])) segs.shift();
