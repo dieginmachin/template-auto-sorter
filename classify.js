@@ -409,10 +409,10 @@
     var by = {}, outp = [];
     parts.forEach(function (p) {
       var k = p.fp, hit = by[k];
-      if (!hit) { p.uses = 1; p.srcs = [p.src]; by[k] = p; outp.push(p); return; }
-      if (hit.srcs.indexOf(p.src) < 0) { hit.uses++; if (hit.srcs.length < 6) hit.srcs.push(p.src); }
+      if (!hit) { p.uses = 1; p.srcs = [p.src]; p._ids = {}; p._ids[p.srcId] = 1; by[k] = p; outp.push(p); return; }
+      if (!hit._ids[p.srcId]) { hit._ids[p.srcId] = 1; hit.uses++; if (hit.srcs.length < 6) hit.srcs.push(p.src); } // count each email once
     });
-    outp.forEach(function (p) { delete p.fp; p.usesBand = p.uses >= 20 ? '20+ emails' : p.uses >= 5 ? '5–19 emails' : p.uses >= 2 ? '2–4 emails' : '1 email'; });
+    outp.forEach(function (p) { delete p.fp; delete p._ids; p.usesBand = p.uses >= 20 ? '20+ emails' : p.uses >= 5 ? '5–19 emails' : p.uses >= 2 ? '2–4 emails' : '1 email'; });
     return outp;
   }
 

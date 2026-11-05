@@ -81,7 +81,7 @@
     email: { noun: 'template', groups: [['all', 'All'], ['brand', 'Brand'], ['type', 'Type'], ['category', 'Category'], ['signature', 'Section'], ['lang', 'Language'], ['year', 'Year'], ['length', 'Length'], ['fileName', 'File']],
       filters: [['type', 'Type'], ['sections', 'Must include these sections', 1], ['brand', 'Brand']], def: 'brand' },
     part: { noun: 'part', groups: [['all', 'All'], ['level', 'Level'], ['part', 'Type'], ['brand', 'Brand'], ['usesBand', 'Used in'], ['source', 'Source'], ['folder', 'Folder'], ['fit', 'Width'], ['fileName', 'File']],
-      filters: [['level', 'Level'], ['part', 'Type'], ['usesBand', 'Used in'], ['brand', 'Brand'], ['source', 'Source']], def: 'level' }
+      filters: [['level', 'Level'], ['part', 'Type'], ['usesBand', 'Used in'], ['brand', 'Brand'], ['source', 'Source']], def: 'part' }
   };
   var LABEL = { brand: 'Brand', type: 'Type', category: 'Category', signature: 'Signature section', lang: 'Language', year: 'Year', length: 'Length', fileName: 'File', level: 'Level', part: 'Type', folder: 'Folder', fit: 'Width', usesBand: 'Used in', source: 'Source' };
   var ALL = [], A = [], V = [], N = 0, els = [], lay = null, TW = 1, TH = 1, mode = 'email', group = 'brand', cam = { x: 0, y: 0, z: 1 }, zmin = .08, zmax = 2.6, vw = 0, vh = 0, isOpen = false, introduced = false, nFiles = 1;
@@ -162,6 +162,13 @@
     els.forEach(function (el) { io.observe(el); });
   }
   // Parts come in every size: render each so its long side is ~400px (emails stay at 0.34 of 600px)
+  // Below this zoom a card is ~30px: don't ask Figma to render it (8,000 parts would queue 8,000 renders)
+  var THUMB_Z = 0.15, thumbsOn = true;
+  function thumbGate() {
+    var on = cam.z >= THUMB_Z; if (on === thumbsOn) return; thumbsOn = on;
+    if (!on) { FG.clearQueue(); $$('.lc img[data-st="q"]', world).forEach(function (im) { im.dataset.st = ''; var ph = im.nextSibling; if (ph) ph.classList.remove('load'); }); }
+    else if (io) { io.disconnect(); els.forEach(function (el) { io.observe(el); }); }
+  }
   function thumbScale(a) { if (a.kind !== 'part' || (a.origin === 'email' && a.w >= 480)) return 0.34; return Math.max(0.25, Math.min(4, Math.round(400 / Math.max(a.w, a.h, 1) * 4) / 4)); }
 
   /* thumbnails load as cards come near the viewport */
@@ -170,7 +177,7 @@
       var el = en.target, i = +el.dataset.i, a = A[i], img = el.querySelector('img');
       if (!a || img.dataset.st === 'ok' || img.dataset.st === 'none') return;
       if (en.isIntersecting) {
-        if (img.dataset.st === 'q') return;
+        if (img.dataset.st === 'q' || cam.z < THUMB_Z) return;
         img.dataset.st = 'q'; el.querySelector('.ph').classList.add('load');
         FG.thumb(a.file, a.id, function (url) {
           var ph = el.querySelector('.ph'); ph.classList.remove('load');
@@ -286,7 +293,7 @@
     var z = cam.z, ox = vw / 2 - cam.x * z, oy = vh / 2 - cam.y * z;
     world.style.transform = 'translate(' + ox.toFixed(2) + 'px,' + oy.toFixed(2) + 'px) scale(' + z.toFixed(4) + ')';
     view.style.backgroundSize = (24 * z) + 'px ' + (24 * z) + 'px'; view.style.backgroundPosition = ox + 'px ' + oy + 'px';
-    zl.textContent = Math.round(z * 100) + '%'; world.style.setProperty('--iz', Math.min(14, 1 / z).toFixed(3)); dirty = true;
+    zl.textContent = Math.round(z * 100) + '%'; thumbGate(); world.style.setProperty('--iz', Math.min(14, 1 / z).toFixed(3)); dirty = true;
   }
   function zoomAt(sx, sy, f) { var z2 = clamp(cam.z * f, zmin, zmax); cam.x += (sx - vw / 2) / cam.z - (sx - vw / 2) / z2; cam.y += (sy - vh / 2) / cam.z - (sy - vh / 2) / z2; cam.z = z2; apply(); }
   var flying = null, vel = { x: 0, y: 0 }, dirty = true;
@@ -340,10 +347,11 @@
   world.addEventListener('focusin', function (e) { var c = e.target.closest('.lc'); if (!c || !c.matches(':focus-visible')) return; root.scrollTop = 0; root.scrollLeft = 0; var p = lay.pos[+c.dataset.i]; if (p) fly(p.x + CW / 2, p.y + CH / 2, Math.max(cam.z, .8), 500); });
   world.addEventListener('keydown', function (e) { var c = e.target.closest('.lc'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openCard(+c.dataset.i); } });
 
-  var aff = [], hovI = -1, hovT = 0, rel = [], lastPt = null;
+  var aff = [], hovI = -1, hovT = 0, rel = [], lastPt = null, relN = 0;
   function clearHover() { aff.forEach(function (el) { el.firstChild.style.transform = ''; el.classList.remove('hot'); }); aff = []; setHov(-1); }
   function hover(sx, sy) {
     lastPt = [sx, sy]; if (!lay) return;
+    if (cam.z < 0.12) { if (aff.length || hovI >= 0) clearHover(); return; } // too far out to read a card
     var wx = cam.x + (sx - vw / 2) / cam.z, wy = cam.y + (sy - vh / 2) / cam.z, R = 280, next = [], best = -1;
     for (var k = 0; k < V.length; k++) {
       var i = V[k], p = lay.pos[i], dx = wx - (p.x + CW / 2), dy = wy - (p.y + CH / 2);
@@ -362,7 +370,11 @@
   function setHov(i) {
     if (i === hovI) return; hovI = i; hovT = performance.now();
     rel.forEach(function (r) { r.classList.remove('rel'); }); rel = [];
-    if (i >= 0) { var k = key(), v = A[i][k]; V.forEach(function (j) { if (j !== i && A[j][k] === v) { els[j].classList.add('rel'); rel.push(els[j]); } }); }
+    // highlight the closest relatives only: a group can hold thousands of parts
+    if (i >= 0) { var k = key(), v = A[i][k], p0 = lay.pos[i], cand = [];
+      V.forEach(function (j) { if (j !== i && A[j][k] === v) { var p = lay.pos[j]; cand.push([Math.abs(p.x - p0.x) + Math.abs(p.y - p0.y), j]); } });
+      relN = cand.length; if (cand.length > 60) cand.sort(function (a, b) { return a[0] - b[0]; });
+      cand.slice(0, 60).forEach(function (c) { els[c[1]].classList.add('rel'); rel.push(els[c[1]]); }); }
     dirty = true;
   }
   function centerOf(el) { var r = el.getBoundingClientRect(); return [r.left - ox0 + r.width / 2, r.top - oy0 + r.height / 2]; }
@@ -370,8 +382,9 @@
     lc.clearRect(0, 0, vw, vh); if (hovI < 0) return;
     var a = centerOf(els[hovI]), k = key(), v = A[hovI][k], cnt = 0;
     lc.lineWidth = 1.2; lc.setLineDash([4, 5]); lc.strokeStyle = 'rgba(23,144,79,.7)'; lc.fillStyle = '#17904f';
-    V.forEach(function (j) {
-      if (j === hovI || A[j][k] !== v) return; cnt++;
+    cnt = relN;
+    rel.forEach(function (el) {
+      var j = +el.dataset.i;
       var p = lay.pos[j], z = cam.z, bx = vw / 2 + (p.x + CW / 2 - cam.x) * z, by = vh / 2 + (p.y + CH / 2 - cam.y) * z;
       if (bx < -200 || by < -200 || bx > vw + 200 || by > vh + 200) return;
       var mx = (a[0] + bx) / 2, my = (a[1] + by) / 2 - Math.hypot(bx - a[0], by - a[1]) * .18;
@@ -380,6 +393,7 @@
     });
     lc.setLineDash([]); lc.beginPath(); lc.arc(a[0], a[1], 4.5, 0, 6.283); lc.fill();
     var txt = (LABEL[k] + ' · ' + v + ' · ' + (cnt + 1)).toUpperCase();
+    if (!rel.length) cnt = relN;
     lc.font = '700 10.5px Figtree, system-ui, sans-serif'; var tw = lc.measureText(txt).width + 16, r = els[hovI].getBoundingClientRect(), tx = clamp(r.left - ox0, 8, vw - tw - 8), ty = Math.max(8, r.top - oy0 - 30);
     lc.fillStyle = '#17904f'; lc.beginPath(); if (lc.roundRect) lc.roundRect(tx, ty, tw, 20, 4); else lc.rect(tx, ty, tw, 20); lc.fill(); lc.fillStyle = '#fff'; lc.fillText(txt, tx + 8, ty + 14);
   }

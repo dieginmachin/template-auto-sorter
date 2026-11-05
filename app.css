@@ -136,7 +136,7 @@ h1 em{font-style:normal;color:var(--green)}
 .lib-top{position:absolute;z-index:5;top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
 .lib-top>*{pointer-events:auto}
 .lib-l,.lib-r{display:flex;gap:10px;align-items:center}
-.lib-pill{display:inline-flex;align-items:center;gap:8px;font:700 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;background:#fff;color:var(--ink);border:1px solid var(--line-2);border-radius:99px;padding:10px 14px;cursor:pointer;transition:transform .3s var(--ease),border-color .2s}
+.lib-pill{white-space:nowrap;display:inline-flex;align-items:center;gap:8px;font:700 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;background:#fff;color:var(--ink);border:1px solid var(--line-2);border-radius:99px;padding:10px 14px;cursor:pointer;transition:transform .3s var(--ease),border-color .2s}
 .lib-pill:hover{border-color:var(--ink)}
 .lib-pill.go{background:var(--cta);color:#fff;border-color:var(--cta)}.lib-pill.go:hover{background:var(--cta-hi)}.lib-pill[disabled]{opacity:.6;pointer-events:none}
 .lib-empty i{cursor:pointer;text-decoration:underline;text-underline-offset:3px}

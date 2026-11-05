@@ -119,6 +119,7 @@
     (queue[q] || (queue[q] = [])).indexOf(id) < 0 && queue[q].push(id);
     clearTimeout(timer); timer = setTimeout(pump, 120);
   }
+  function clearQueue() { for (var q in queue) { queue[q].forEach(function (id) { delete waiting[q + '|' + id]; }); queue[q] = []; } tell(); }
   function cancel(key, id, scale) { var qk = key + '|' + (scale || 0.34), q = queue[qk]; if (!q) return; var i = q.indexOf(id); if (i > -1) q.splice(i, 1); delete waiting[qk + '|' + id]; }
   function resolve(qk, id, url) { var k = qk + '|' + id; (waiting[k] || []).forEach(function (f) { f(url); }); delete waiting[k]; }
   async function pump() {
@@ -189,6 +190,6 @@
   function forget(key) { store('data:' + key, null); store('img:' + key, null); delete imgCache[key]; idb.del('atoms:' + key); }
   function forgetAll() { files().forEach(function (f) { forget(f.key); }); store('files', null); store('seen', null); setToken(''); }
 
-  root.FG = { token: token, setToken: setToken, parseUrl: parseUrl, nodeUrl: nodeUrl, loadFile: loadFile, cached: cached, thumb: thumb, thumbFor: thumbFor, cancel: cancel, full: full,
+  root.FG = { token: token, setToken: setToken, parseUrl: parseUrl, nodeUrl: nodeUrl, loadFile: loadFile, cached: cached, thumb: thumb, thumbFor: thumbFor, cancel: cancel, clearQueue: clearQueue, full: full,
     files: files, forget: forget, forgetAll: forgetAll, onWait: onWait, onQueue: onQueue, atomizeFile: atomizeFile, atoms: atoms, store: store, humanWait: humanWait };
 })(this);
