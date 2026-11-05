@@ -375,24 +375,31 @@
         else if (/\b(tag|badge|label|pill|sticker)\b/.test(nm) && c.type !== 'TEXT') t = 'Badge & label';
         else if (/\blogo\b/.test(nm) && c.type !== 'TEXT') t = 'Logo';
         else if (/social/.test(nm)) t = 'Social icons';
-        if (t) rec(c, 'Atoms', t); else if (d < 4 && c.type !== 'INSTANCE' && c.type !== 'TEXT') atoms(c, d + 1);
+        if (t) { var lbl = texts(c)[0]; rec(c, 'Atoms', t, lbl ? { title: clean(lbl).slice(0, 40) } : null); } else if (d < 4 && c.type !== 'INSTANCE' && c.type !== 'TEXT') atoms(c, d + 1);
       });
     }
-    function organism(n) {
+    function wrapperish(n) { return (GIFT.test(n.name) || /wrapper|layouts?\s*\//i.test(n.name)) && !/footer|header/i.test(bare(n.name)) && kids(n).some(function (k) { return k.type !== 'TEXT' && box(k).width >= W * 0.8; }); }
+    function organism(n, d) {
+      d = d || 0;
+      if (d < 3 && wrapperish(n)) { kids(n).forEach(function (k) { if (k.type !== 'TEXT' && box(k).width >= W * 0.8) organism(k, d + 1); }); return; }
       var nm = bare(n.name), type = first(ORG_TYPES, nm);
       var cols = kids(n).filter(function (c) { return COL.test(c.name) || (/column/i.test(c.name)); });
       if (!cols.length) cols = kids(n).filter(function (c) { return c.type !== 'TEXT' && box(c).width < W * 0.6 && box(c).height > 40; });
-      if (!type) type = cols.length >= 2 ? (recipe(cols[0]).indexOf('button') > -1 && recipe(cols[0]).indexOf('Image') === 0 ? 'Product grid' : 'Image gallery') : 'Other';
+      if (!type) {
+        var rc = recipe(n);
+        type = cols.length >= 2 ? (recipe(cols[0]).indexOf('button') > -1 && recipe(cols[0]).indexOf('Image') === 0 ? 'Product grid' : 'Image gallery')
+          : rc === 'Image' ? 'Image gallery' : rc.indexOf('button') > -1 || rc.indexOf('text') > -1 || rc === 'Text' ? 'Text & CTA' : 'Other';
+      }
       rec(n, 'Organisms', type);
-      if (cols.length >= 2) cols.forEach(function (c) { var r = recipe(c); rec(c, 'Molecules', r === 'Image + text + button' ? 'Card (image, text, button)' : r, { title: r + ' · ' + nm }); });
+      var chrome = /Footer|Header|Announcement/.test(type);
+      if (cols.length >= 2 && !chrome) cols.forEach(function (c) { var r = recipe(c); rec(c, 'Molecules', r === 'Image + text + button' ? 'Card (image, text, button)' : r, { title: r + ' · ' + nm }); });
       atoms(n, 0);
     }
     kids(email).forEach(function (c) {
       if (c.type === 'TEXT' || c.type === 'VECTOR') return;
       var nm = bare(c.name), whole = /footer|header/i.test(nm);
-      var isWrap = !whole && (GIFT.test(c.name) || /wrapper|layouts?\s*\//i.test(c.name)) && kids(c).filter(function (k) { return box(k).width >= W * 0.8; }).length >= 2;
-      if (isWrap) kids(c).forEach(function (k) { if (k.type !== 'TEXT') organism(k); });
-      else if (box(c).width >= W * 0.8) organism(c);
+      if (!whole && wrapperish(c)) organism(c, 0);
+      else if (box(c).width >= W * 0.8) organism(c, 0);
     });
     return out;
   }
