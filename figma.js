@@ -98,20 +98,23 @@
   function imgStore(key) { return imgCache[key] || (imgCache[key] = store('img:' + key) || {}); }
   var saveT = {};
   function imgSave(key) { clearTimeout(saveT[key]); saveT[key] = setTimeout(function () { store('img:' + key, imgCache[key]); }, 400); }
-  function thumbFor(key, id) { var c = imgStore(key)[id]; return c && Date.now() - c[1] < IMG_TTL ? c[0] : null; }
+  function ck(id, scale) { return scale && scale !== 0.34 ? id + '@' + scale : id; }
+  function thumbFor(key, id, scale) { var c = imgStore(key)[ck(id, scale)]; return c && Date.now() - c[1] < IMG_TTL ? c[0] : null; }
 
   var queue = {}, waiting = {}, busy = 0, blockedUntil = 0, timer = 0;
   // Ask for a thumbnail; cb(url|null) fires once it is known.
-  function thumb(key, id, cb) {
-    var hit = thumbFor(key, id);
+  // Requests are batched per file and render scale: "key|scale" -> [ids]
+  function thumb(key, id, cb, scale) {
+    scale = scale || 0.34;
+    var hit = thumbFor(key, id, scale);
     if (hit) return cb(hit);
-    var k = key + '|' + id;
+    var q = key + '|' + scale, k = q + '|' + id;
     (waiting[k] || (waiting[k] = [])).push(cb);
-    (queue[key] || (queue[key] = [])).indexOf(id) < 0 && queue[key].push(id);
+    (queue[q] || (queue[q] = [])).indexOf(id) < 0 && queue[q].push(id);
     clearTimeout(timer); timer = setTimeout(pump, 120);
   }
-  function cancel(key, id) { var q = queue[key]; if (!q) return; var i = q.indexOf(id); if (i > -1) q.splice(i, 1); delete waiting[key + '|' + id]; }
-  function resolve(key, id, url) { var k = key + '|' + id; (waiting[k] || []).forEach(function (f) { f(url); }); delete waiting[k]; }
+  function cancel(key, id, scale) { var qk = key + '|' + (scale || 0.34), q = queue[qk]; if (!q) return; var i = q.indexOf(id); if (i > -1) q.splice(i, 1); delete waiting[qk + '|' + id]; }
+  function resolve(qk, id, url) { var k = qk + '|' + id; (waiting[k] || []).forEach(function (f) { f(url); }); delete waiting[k]; }
   async function pump() {
     if (Date.now() < blockedUntil) { clearTimeout(timer); timer = setTimeout(pump, blockedUntil - Date.now() + 50); return; }
     var keys = Object.keys(queue).filter(function (k) { return queue[k].length; });
@@ -121,21 +124,23 @@
       busy++; fetchBatch(key, ids).finally(function () { busy--; pump(); });
     }
   }
-  async function fetchBatch(key, ids) {
+  async function fetchBatch(qk, ids) {
+    var key = qk.split('|')[0], scale = +qk.split('|')[1] || 0.34;
     try {
-      var r = await get('/images/' + key + '?scale=0.34&format=jpg&ids=' + encodeURIComponent(ids.join(',')));
+      // parts can be transparent, so they render as PNG; emails as smaller JPGs
+      var r = await get('/images/' + key + '?scale=' + scale + '&format=' + (scale === 0.34 ? 'jpg' : 'png') + '&ids=' + encodeURIComponent(ids.join(',')));
       var c = imgStore(key), now = Date.now();
-      ids.forEach(function (id) { var u = r.images && r.images[id]; if (u) c[id] = [u, now]; resolve(key, id, u || null); });
+      ids.forEach(function (id) { var u = r.images && r.images[id]; if (u) c[ck(id, scale)] = [u, now]; resolve(qk, id, u || null); });
       imgSave(key);
     } catch (e) {
-      if (e.code === 'rate') { blockedUntil = Date.now() + Math.min(e.wait || 60, 3600) * 1000; queue[key] = ids.concat(queue[key] || []); listeners.forEach(function (f) { f(e.wait || 60, e.message); }); return; }
-      if (ids.length > 6) { var h = Math.ceil(ids.length / 2); await fetchBatch(key, ids.slice(0, h)); await fetchBatch(key, ids.slice(h)); return; }
-      ids.forEach(function (id) { resolve(key, id, null); });
+      if (e.code === 'rate') { blockedUntil = Date.now() + Math.min(e.wait || 60, 3600) * 1000; queue[qk] = ids.concat(queue[qk] || []); listeners.forEach(function (f) { f(e.wait || 60, e.message); }); return; }
+      if (ids.length > 6) { var h = Math.ceil(ids.length / 2); await fetchBatch(qk, ids.slice(0, h)); await fetchBatch(qk, ids.slice(h)); return; }
+      ids.forEach(function (id) { resolve(qk, id, null); });
     }
   }
   // Full-size render for the viewer
-  async function full(key, id) {
-    var r = await get('/images/' + key + '?scale=1&format=png&ids=' + encodeURIComponent(id));
+  async function full(key, id, scale) {
+    var r = await get('/images/' + key + '?scale=' + (scale || 1) + '&format=png&ids=' + encodeURIComponent(id));
     return r.images && r.images[id];
   }
 

@@ -61,8 +61,8 @@
       out.push(data);
     }
     var empty = out.filter(function (d) { return !d.items.length; });
-    if (empty.length === out.length) throw Object.assign(new Error('No email-sized frames found in ' + empty.map(function (d) { return '"' + d.name + '"'; }).join(', ') + '. The sorter looks for frames 320–900px wide that are taller than they are wide.'), { code: 'empty' });
-    if (empty.length) setTimeout(function () { note('No email-sized frames in ' + empty.map(function (d) { return '"' + d.name + '"'; }).join(', ') + '. The other files are sorted.'); }, 1800);
+    if (empty.length === out.length) throw Object.assign(new Error('No email templates or parts found in ' + empty.map(function (d) { return '"' + d.name + '"'; }).join(', ') + '. Emails are frames 320–900px wide and taller than they are wide; parts live on a page or section named Parts (or are components).'), { code: 'empty' });
+    if (empty.length) setTimeout(function () { note('Nothing to sort in ' + empty.map(function (d) { return '"' + d.name + '"'; }).join(', ') + '. The other files are sorted.'); }, 1800);
     return out;
   }
 
@@ -76,25 +76,53 @@
      ========================================================= */
   var root = $('#lib'), view = $('#libView'), world = $('#libWorld'), lk = $('#libLinks'), lc = lk.getContext('2d'), mini = $('#libMini'), mc = mini.getContext('2d');
   var CW = 200, CH = Math.round(CW * 4 / 3) + 46, PX = 244, PY = CH + 70;
-  var GROUPS = [['all', 'All'], ['brand', 'Brand'], ['type', 'Type'], ['category', 'Category'], ['signature', 'Section'], ['lang', 'Language'], ['year', 'Year'], ['length', 'Length'], ['fileName', 'File']];
-  var LABEL = { brand: 'Brand', type: 'Type', category: 'Category', signature: 'Signature section', lang: 'Language', year: 'Year', length: 'Length', fileName: 'File' };
-  var A = [], V = [], N = 0, els = [], lay = null, TW = 1, TH = 1, group = 'brand', cam = { x: 0, y: 0, z: 1 }, zmin = .08, zmax = 2.6, vw = 0, vh = 0, isOpen = false, introduced = false;
+  // Two libraries in one: whole emails, and the Atomic Emails parts (atoms, molecules, organisms)
+  var MODES = {
+    email: { noun: 'template', groups: [['all', 'All'], ['brand', 'Brand'], ['type', 'Type'], ['category', 'Category'], ['signature', 'Section'], ['lang', 'Language'], ['year', 'Year'], ['length', 'Length'], ['fileName', 'File']],
+      filters: [['type', 'Type'], ['sections', 'Must include these sections', 1], ['brand', 'Brand']], def: 'brand' },
+    part: { noun: 'part', groups: [['all', 'All'], ['level', 'Level'], ['part', 'Type'], ['folder', 'Folder'], ['brand', 'Brand'], ['fit', 'Width'], ['fileName', 'File']],
+      filters: [['level', 'Level'], ['part', 'Type'], ['folder', 'Folder'], ['brand', 'Brand']], def: 'level' }
+  };
+  var LABEL = { brand: 'Brand', type: 'Type', category: 'Category', signature: 'Signature section', lang: 'Language', year: 'Year', length: 'Length', fileName: 'File', level: 'Level', part: 'Type', folder: 'Folder', fit: 'Width' };
+  var ALL = [], A = [], V = [], N = 0, els = [], lay = null, TW = 1, TH = 1, mode = 'email', group = 'brand', cam = { x: 0, y: 0, z: 1 }, zmin = .08, zmax = 2.6, vw = 0, vh = 0, isOpen = false, introduced = false, nFiles = 1;
   var seen = FG.store('seen') || {};
-  var F = { q: '', type: {}, sec: {}, brand: {} };
+  var F = { q: '', sel: {} };
   var io = null;
+  var GROUPS = MODES.email.groups;
 
   function sid(a) { return a.file + '|' + a.id; }
+  function pref(k, v) { try { if (v === undefined) return localStorage.getItem('tas:v1:' + k); localStorage.setItem('tas:v1:' + k, v); } catch (e) { return null; } }
 
   function setData(sets) {
-    A = []; sets.forEach(function (d) { A = A.concat(d.items); });
-    TAS.mergeBrands(A); // the same brand spelled two ways in two files
-    A.sort(function (a, b) { return a.brand.localeCompare(b.brand) || b.date - a.date || a.title.localeCompare(b.title); });
-    N = A.length;
-    GROUPS.forEach(function (g) { var b = $('[data-g="' + g[0] + '"]', seg); if (b) b.hidden = g[0] === 'fileName' && sets.length < 2; });
-    if (group === 'fileName' && sets.length < 2) group = 'brand';
+    ALL = []; sets.forEach(function (d) { ALL = ALL.concat(d.items); });
+    ALL.forEach(function (a) { if (!a.kind) a.kind = 'email'; }); // cached before parts mode existed
+    TAS.mergeBrands(ALL); // the same brand spelled two ways in two files
+    nFiles = sets.length;
+    var ne = ALL.filter(function (a) { return a.kind === 'email'; }).length, np = ALL.length - ne;
     $('#libName').textContent = sets.length === 1 ? sets[0].name : 'Template Library';
-    $('#libSub').textContent = plural(N, 'template') + ' · ' + plural(sets.length, 'file');
-    build(); buildFilters(); applyFilter(false); introduced = false;
+    $('#libSub').textContent = [ne ? plural(ne, 'template') : '', np ? plural(np, 'part') : '', plural(sets.length, 'file')].filter(Boolean).join(' · ');
+    $('#mEmailN').textContent = ne; $('#mPartN').textContent = np;
+    var m = pref('mode'); if (m !== 'part' && m !== 'email') m = 'email';
+    if (m === 'email' && !ne && np) m = 'part'; if (m === 'part' && !np && ne) m = 'email';
+    setMode(m, true);
+  }
+
+  function setMode(m, fresh) {
+    if (m === mode && !fresh) return;
+    mode = m; pref('mode', m); GROUPS = MODES[m].groups;
+    $$('#modeSeg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.m === m); });
+    A = ALL.filter(function (a) { return a.kind === m; });
+    A.sort(m === 'part'
+      ? function (a, b) { return TAS.LEVELS.indexOf(a.level) - TAS.LEVELS.indexOf(b.level) || a.part.localeCompare(b.part) || a.title.localeCompare(b.title); }
+      : function (a, b) { return a.brand.localeCompare(b.brand) || b.date - a.date || a.title.localeCompare(b.title); });
+    N = A.length;
+    var g = pref('group:' + m); group = g && GROUPS.some(function (x) { return x[0] === g; }) ? g : MODES[m].def;
+    if (group === 'fileName' && nFiles < 2) group = MODES[m].def;
+    buildSeg(); build(); buildFilters(); applyFilter(false);
+    $('#libEmpty').innerHTML = N ? '<b>No ' + MODES[m].noun + 's match.</b><span>Clear the search or filters to see everything.</span>'
+      : m === 'part' ? '<b>No parts yet.</b><span>Put your atoms, molecules and organisms on a page or section named <i>Parts</i>, with sections named <i>Atoms</i>, <i>Molecules</i> and <i>Organisms</i>. Components anywhere in the file count too. Then Files → Re-sort from Figma.</span>'
+      : '<b>No email templates here.</b><span>Emails are frames 320–900px wide and taller than they are wide.</span>';
+    if (isOpen) { introduced = false; lib.open(); }
   }
 
   function build() {
@@ -103,9 +131,13 @@
     var frag = document.createDocumentFragment();
     els = A.map(function (a, i) {
       var d = document.createElement('div'); d.className = 'lc' + (seen[sid(a)] ? ' seen' : ''); d.dataset.i = i;
-      d.tabIndex = 0; d.setAttribute('role', 'button'); d.setAttribute('aria-label', a.title + ', ' + a.brand + ', ' + a.category);
-      d.innerHTML = '<div class="lc-in"><div class="lc-img"><img alt="" draggable="false" decoding="async"><div class="ph"><span>' + esc(a.category) + '</span><b>' + esc(a.title) + '</b></div></div>' +
-        '<div class="lc-meta"><span>' + esc(a.brand) + '</span><span class="' + (a.type === 'Flow' ? 'fl' : '') + '">' + (a.type === 'Flow' ? 'Flow' : esc(a.year === 'Undated' ? 'Campaign' : a.year)) + '</span></div>' +
+      d.tabIndex = 0; d.setAttribute('role', 'button');
+      var part = a.kind === 'part';
+      d.setAttribute('aria-label', a.title + ', ' + a.brand + ', ' + (part ? a.level + ', ' + a.part : a.category));
+      var right = part ? '<span class="lv lv-' + a.level.charAt(0).toLowerCase() + '">' + esc(a.level.replace(/s$/, '')) + '</span>'
+        : '<span class="' + (a.type === 'Flow' ? 'fl' : '') + '">' + (a.type === 'Flow' ? 'Flow' : esc(a.year === 'Undated' ? 'Campaign' : a.year)) + '</span>';
+      d.innerHTML = '<div class="lc-in"><div class="lc-img' + (part ? ' fit' : '') + '"><img alt="" draggable="false" decoding="async"><div class="ph"><span>' + esc(part ? a.part : a.category) + '</span><b>' + esc(a.title) + '</b></div></div>' +
+        '<div class="lc-meta"><span>' + esc(part ? a.part : a.brand) + '</span>' + right + '</div>' +
         '<div class="lc-t">' + esc(a.title) + '</div><i class="lc-dot"></i></div>';
       frag.appendChild(d); return d;
     });
@@ -113,12 +145,14 @@
     io = new IntersectionObserver(onSee, { root: root, rootMargin: '500px' });
     els.forEach(function (el) { io.observe(el); });
   }
+  // Parts come in every size: render each so its long side is ~400px (emails stay at 0.34 of 600px)
+  function thumbScale(a) { if (a.kind !== 'part') return 0.34; return Math.max(0.25, Math.min(4, Math.round(400 / Math.max(a.w, a.h, 1) * 4) / 4)); }
 
   /* thumbnails load as cards come near the viewport */
   function onSee(entries) {
     entries.forEach(function (en) {
       var el = en.target, i = +el.dataset.i, a = A[i], img = el.querySelector('img');
-      if (img.dataset.st === 'ok' || img.dataset.st === 'none') return;
+      if (!a || img.dataset.st === 'ok' || img.dataset.st === 'none') return;
       if (en.isIntersecting) {
         if (img.dataset.st === 'q') return;
         img.dataset.st = 'q'; el.querySelector('.ph').classList.add('load');
@@ -128,40 +162,46 @@
           img.onload = function () { img.classList.add('ok'); img.dataset.st = 'ok'; };
           img.onerror = function () { img.dataset.st = ''; };
           img.src = url;
-        });
-      } else if (img.dataset.st === 'q') { FG.cancel(a.file, a.id); img.dataset.st = ''; el.querySelector('.ph').classList.remove('load'); }
+        }, thumbScale(a));
+      } else if (img.dataset.st === 'q') { FG.cancel(a.file, a.id, thumbScale(a)); img.dataset.st = ''; el.querySelector('.ph').classList.remove('load'); }
     });
   }
 
   /* ---------- filters ---------- */
-  var fType = $('#fType'), fSec = $('#fSec'), fBrand = $('#fBrand');
-  function counts(key, multi) { var m = {}; A.forEach(function (a) { (multi ? a[key] : [a[key]]).forEach(function (v) { m[v] = (m[v] || 0) + 1; }); }); return m; }
-  function chipSet(box, map, store, order) {
-    box.innerHTML = '';
-    var keys = Object.keys(map); keys.sort(order || function (a, b) { return map[b] - map[a] || a.localeCompare(b); });
-    keys.forEach(function (k) {
-      var b = document.createElement('button'); b.type = 'button'; b.innerHTML = esc(k) + '<em>' + map[k] + '</em>'; b.setAttribute('aria-pressed', !!store[k]);
-      b.addEventListener('click', function () { if (store[k]) delete store[k]; else store[k] = 1; b.setAttribute('aria-pressed', !!store[k]); applyFilter(true); });
-      box.appendChild(b);
+  var fBox = $('#fGroups');
+  var ORDERS = { sections: TAS.SECTIONS, level: TAS.LEVELS, part: TAS.PART_TYPES };
+  function counts(key) { var m = {}; A.forEach(function (a) { [].concat(a[key]).forEach(function (v) { m[v] = (m[v] || 0) + 1; }); }); return m; }
+  function buildFilters() {
+    F.sel = {}; fBox.innerHTML = '';
+    MODES[mode].filters.forEach(function (fd) {
+      var key = fd[0], map = counts(key), keys = Object.keys(map), ord = ORDERS[key];
+      if (keys.length < 2 && !fd[2]) return;
+      keys.sort(ord ? function (a, b) { return ord.indexOf(a) - ord.indexOf(b); } : function (a, b) { return map[b] - map[a] || a.localeCompare(b); });
+      var store = F.sel[key] = {}, wrap = document.createElement('div'); wrap.className = 'fgrp';
+      wrap.innerHTML = '<span class="lab">' + esc(fd[1]) + '</span><div class="fchips"></div>';
+      keys.forEach(function (k) {
+        var b = document.createElement('button'); b.type = 'button'; b.innerHTML = esc(k) + '<em>' + map[k] + '</em>'; b.setAttribute('aria-pressed', false);
+        b.addEventListener('click', function () { if (store[k]) delete store[k]; else store[k] = 1; b.setAttribute('aria-pressed', !!store[k]); applyFilter(true); });
+        wrap.lastChild.appendChild(b);
+      });
+      fBox.appendChild(wrap);
     });
   }
-  function buildFilters() {
-    F.type = {}; F.sec = {}; F.brand = {};
-    chipSet(fType, counts('type'), F.type);
-    var secOrder = TAS.SECTIONS;
-    chipSet(fSec, counts('sections', true), F.sec, function (a, b) { return secOrder.indexOf(a) - secOrder.indexOf(b); });
-    chipSet(fBrand, counts('brand'), F.brand);
-  }
   function match(a) {
-    if (F.q) { var hay = (a.name + ' ' + a.brand + ' ' + a.category + ' ' + a.sections.join(' ') + ' ' + a.lang).toLowerCase(); if (F.q.split(/\s+/).some(function (w) { return hay.indexOf(w) < 0; })) return false; }
-    if (Object.keys(F.type).length && !F.type[a.type]) return false;
-    if (Object.keys(F.brand).length && !F.brand[a.brand]) return false;
-    for (var s in F.sec) if (a.sections.indexOf(s) < 0) return false;
+    if (F.q) {
+      var hay = [a.name, a.brand, a.category, a.part, a.level, a.folder, a.where, a.lang, [].concat(a.sections || []).join(' ')].join(' ').toLowerCase();
+      if (F.q.split(/\s+/).some(function (w) { return hay.indexOf(w) < 0; })) return false;
+    }
+    for (var key in F.sel) {
+      var st = F.sel[key], on = Object.keys(st); if (!on.length) continue;
+      if (Array.isArray(a[key])) { if (on.some(function (k) { return a[key].indexOf(k) < 0; })) return false; } // "must include" all
+      else if (!st[a[key]]) return false;
+    }
     return true;
   }
   function applyFilter(animate) {
     V = []; A.forEach(function (a, i) { var ok = match(a); els[i].classList.toggle('off', !ok); if (ok) V.push(i); });
-    var nf = Object.keys(F.type).length + Object.keys(F.sec).length + Object.keys(F.brand).length;
+    var nf = 0; for (var k in F.sel) nf += Object.keys(F.sel[k]).length;
     $('#libFN').hidden = !nf; $('#libFN').textContent = nf;
     $('#fCount').textContent = V.length === N ? 'Showing all ' + N : 'Showing ' + V.length + ' of ' + N;
     $('#libEmpty').hidden = V.length > 0;
@@ -173,14 +213,16 @@
   $('#libQ').addEventListener('keydown', function (e) { if (e.key === 'Escape') { this.value = ''; F.q = ''; applyFilter(true); this.blur(); } });
   var fb = $('#libFilterB'), fp = $('#libFilter');
   fb.addEventListener('click', function () { fp.hidden = !fp.hidden; fb.setAttribute('aria-expanded', !fp.hidden); });
-  $('#fClear').addEventListener('click', function () { F.type = {}; F.sec = {}; F.brand = {}; $$('.fchips button', fp).forEach(function (b) { b.setAttribute('aria-pressed', false); }); applyFilter(true); });
+  $('#fClear').addEventListener('click', function () { for (var k in F.sel) F.sel[k] = {}; buildFilters(); $$('.fchips button', fp).forEach(function (b) { b.setAttribute('aria-pressed', false); }); applyFilter(true); });
   document.addEventListener('pointerdown', function (e) { if (!fp.hidden && !e.target.closest('#libFilter,#libFilterB')) { fp.hidden = true; fb.setAttribute('aria-expanded', false); } });
 
   /* ---------- layout ---------- */
   var ORDER = {
     year: function (a, b) { return a.v === 'Undated' ? 1 : b.v === 'Undated' ? -1 : b.v.localeCompare(a.v); },
     length: function (a, b) { return ['Short', 'Medium', 'Long'].indexOf(a.v) - ['Short', 'Medium', 'Long'].indexOf(b.v); },
-    type: function (a, b) { return a.v === 'Campaign' ? -1 : 1; }
+    type: function (a, b) { return a.v === 'Campaign' ? -1 : 1; },
+    level: function (a, b) { return TAS.LEVELS.indexOf(a.v) - TAS.LEVELS.indexOf(b.v); },
+    fit: function (a, b) { return ['Full width', 'Half width', 'Small'].indexOf(a.v) - ['Full width', 'Half width', 'Small'].indexOf(b.v); }
   };
   function layout(g) {
     var pos = [], labels = [];
@@ -192,7 +234,7 @@
       var m = {}; V.forEach(function (i) { var v = A[i][g]; (m[v] || (m[v] = [])).push(i); });
       var arr = Object.keys(m).map(function (v) { return { v: v, ids: m[v] }; });
       arr.sort(ORDER[g] || function (a, b) { return b.ids.length - a.ids.length || a.v.localeCompare(b.v); });
-      arr.forEach(function (gv) { gv.ids.sort(function (x, y) { return A[y].date - A[x].date || A[x].brand.localeCompare(A[y].brand); }); });
+      arr.forEach(function (gv) { gv.ids.sort(function (x, y) { return (A[y].date || 0) - (A[x].date || 0) || x - y; }); });
       var area = 0; arr.forEach(function (gv) { var n = gv.ids.length, cc = Math.min(n, Math.max(1, Math.ceil(Math.sqrt(n * 1.3)))); area += (cc * PX + 150) * (Math.ceil(n / cc) * PY + 214); });
       var maxW = Math.max(PX * 7, Math.sqrt(area * 1.7)), G = 150, x = 0, y = 0, rowH = 0, wMax = 0;
       arr.forEach(function (gv) {
@@ -300,7 +342,7 @@
     aff.forEach(function (el) { if (next.indexOf(el) < 0) { el.firstChild.style.transform = ''; el.classList.remove('hot'); } }); aff = next;
     setHov(best);
   }
-  function key() { return group === 'all' ? 'brand' : group; }
+  function key() { return group === 'all' ? (mode === 'part' ? 'level' : 'brand') : group; }
   function setHov(i) {
     if (i === hovI) return; hovI = i; hovT = performance.now();
     rel.forEach(function (r) { r.classList.remove('rel'); }); rel = [];
@@ -336,7 +378,7 @@
     clearTimeout(seenT); seenT = setTimeout(function () { FG.store('seen', seen); }, 500);
     els[i].classList.add('seen', 'just'); setTimeout(function () { els[i].classList.remove('just'); }, 1100);
     var n = score(), T = V.length;
-    toast(n === 1 ? 'First find. ' + (T - 1) + ' more in here.' : n === T ? 'Library complete. You have seen every template.' : n % 10 === 0 ? n + ' found. ' + (T - n) + ' to go.' : null); dirty = true;
+    toast(n === 1 ? 'First find. ' + (T - 1) + ' more in here.' : n === T ? 'Library complete. You have seen every ' + MODES[mode].noun + '.' : n % 10 === 0 ? n + ' found. ' + (T - n) + ' to go.' : null); dirty = true;
   }
   function openCard(i) { discover(i); viewer.open(i); }
   function surprise() {
@@ -348,13 +390,18 @@
 
   /* ---------- dock ---------- */
   var seg = $('#libSeg'), chips = $('#libChips');
-  GROUPS.forEach(function (g) {
-    var b = document.createElement('button'); b.type = 'button'; b.textContent = g[1]; b.dataset.g = g[0]; b.setAttribute('aria-pressed', g[0] === group);
-    b.addEventListener('click', function () { setGroup(g[0]); }); seg.appendChild(b);
-  });
+  function buildSeg() {
+    seg.innerHTML = '';
+    GROUPS.forEach(function (g) {
+      if (g[0] === 'fileName' && nFiles < 2) return;
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = g[1]; b.dataset.g = g[0]; b.setAttribute('aria-pressed', g[0] === group);
+      b.addEventListener('click', function () { setGroup(g[0]); }); seg.appendChild(b);
+    });
+  }
+  $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.m); }); });
   function setGroup(g) {
     if (g === group) return; group = g; $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.g === g); });
-    try { localStorage.setItem('tas:v1:group', g); } catch (e) {}
+    pref('group:' + mode, g);
     clearHover(); layout(g); place(true); renderChips(); setTimeout(fit, 80);
   }
   function renderChips() {
@@ -410,7 +457,7 @@
           var z = cam.z; V.forEach(function (i) { var p = lay.pos[i], r = Math.hypot((p.x + CW / 2 - cam.x) * z, (p.y + CH / 2 - cam.y) * z); els[i].firstChild.style.setProperty('--d', Math.min(1.1, r / 1400).toFixed(2) + 's'); });
           root.classList.remove('enter'); void root.offsetWidth; root.classList.add('enter'); setTimeout(function () { root.classList.remove('enter'); }, 2400);
         }
-        scramble('Sorted. ' + V.length + ' templates');
+        scramble('Sorted. ' + plural(V.length, MODES[mode].noun));
         hint.classList.remove('gone'); clearTimeout(lib._h); lib._h = setTimeout(hideHint, 8000);
       } else apply();
       if (!running) { running = true; lt = 0; requestAnimationFrame(loop); }
@@ -435,8 +482,6 @@
   });
 
   function openLibrary(sets) {
-    try { var g = localStorage.getItem('tas:v1:group'); if (g && GROUPS.some(function (x) { return x[0] === g; })) group = g; } catch (e) {}
-    $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.g === group); });
     setData(sets); lib.open();
   }
 
@@ -455,14 +500,19 @@
       el.hidden = false; document.body.classList.add('locked');
       $('#lbBrand').textContent = a.brand + ' · ' + a.fileName;
       $('#lbT').textContent = a.title; $('#lbName').textContent = a.name;
-      var rows = [['Type', a.type], ['Category', a.category], ['Language', a.lang], ['Date', a.date && a.date % 10000 ? fmtDate(a.date) : a.year], ['Size', a.w + ' × ' + a.h + ' · ' + a.length]];
+      var part = a.kind === 'part';
+      var rows = part
+        ? [['Level', a.level.replace(/s$/, '') + (a.levelBy === 'size' ? ' (by size)' : '')], ['Type', a.part], ['Folder', a.folder], ['Size', a.w + ' × ' + a.h + ' · ' + a.fit]].concat(a.variants ? [['Variants', a.variants]] : []).concat(a.where ? [['Found in', a.where]] : [])
+        : [['Type', a.type], ['Category', a.category], ['Language', a.lang], ['Date', a.date && a.date % 10000 ? fmtDate(a.date) : a.year], ['Size', a.w + ' × ' + a.h + ' · ' + a.length]];
       $('#lbTags').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('');
-      $('#lbSecs').innerHTML = a.sections.length ? a.sections.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') : '<span>No named blocks</span>';
+      $('#lbSecs').innerHTML = part ? '' : a.sections.length ? a.sections.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') : '<span>No named blocks</span>';
+      $('#lbs').classList.toggle('partv', part);
+      img.style.width = Math.min(600, part ? a.w : 600) + 'px';
       $('#lbOpen').href = FG.nodeUrl(a.file, a.id);
       img.removeAttribute('src'); img.alt = a.title; ld.hidden = false; ld.textContent = 'Rendering from Figma…';
-      var th = FG.thumbFor(a.file, a.id); if (th) img.src = th;
+      var sc = thumbScale(a), th = FG.thumbFor(a.file, a.id, sc); if (th) img.src = th;
       $('#lbs').scrollTop = 0;
-      FG.full(a.file, a.id).then(function (u) { if (t !== tok) return; if (u) { var im = new Image(); im.onload = function () { if (t === tok) { img.src = u; ld.hidden = true; } }; im.src = u; } else ld.textContent = 'Figma could not render this frame.'; })
+      FG.full(a.file, a.id, part ? Math.min(4, Math.max(1, Math.round(1200 / Math.max(a.w, a.h, 1)))) : 1).then(function (u) { if (t !== tok) return; if (u) { var im = new Image(); im.onload = function () { if (t === tok) { img.src = u; ld.hidden = true; } }; im.src = u; } else ld.textContent = 'Figma could not render this frame.'; })
         .catch(function (e) { if (t === tok) { ld.textContent = e.message; ld.hidden = false; } if (th) ld.hidden = true; });
       $('#lbx').focus({ preventScroll: true });
     }
@@ -489,7 +539,8 @@
     $('#pFiles').innerHTML = '';
     files.forEach(function (f) {
       var d = FG.cached(f.key), li = document.createElement('li');
-      li.innerHTML = '<div><b>' + esc(f.name || f.key) + '</b><span>' + (d ? plural(d.items.length, 'template') + ' · sorted ' + new Date(d.savedAt).toLocaleDateString() : 'Not sorted yet') + '</span></div>' +
+      var np = d ? d.items.filter(function (x) { return x.kind === 'part'; }).length : 0;
+      li.innerHTML = '<div><b>' + esc(f.name || f.key) + '</b><span>' + (d ? plural(d.items.length - np, 'template') + (np ? ' · ' + plural(np, 'part') : '') + ' · sorted ' + new Date(d.savedAt).toLocaleDateString() : 'Not sorted yet') + '</span></div>' +
         '<a href="https://www.figma.com/design/' + encodeURIComponent(f.key) + '/" target="_blank" rel="noopener">Open</a><button type="button">Remove</button>';
       li.querySelector('button').addEventListener('click', function () {
         if (FG.files().length === 1) { forgetAll(); return; }

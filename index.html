@@ -22,7 +22,7 @@
     <section class="cintro">
       <p class="eyebrow"><span class="pulse" aria-hidden="true"></span>AI Template Library Auto-Sorter</p>
       <h1>Your Figma templates, <em>sorted.</em></h1>
-      <p class="lead">Paste a Figma file link and the sorter reads every email frame in it. Each template goes into a group by <b>brand</b>, <b>campaign or flow</b>, <b>category</b> and the <b>sections</b> it is built from, on one canvas you can drag around. Click any card to open it in Figma.</p>
+      <p class="lead">Paste a Figma file link and the sorter reads every email frame in it. Each template goes into a group by <b>brand</b>, <b>campaign or flow</b>, <b>category</b> and the <b>sections</b> it is built from, on one canvas you can drag around. Your Atomic Emails <b>parts</b> (atoms, molecules, organisms) get their own library. Click any card to open it in Figma.</p>
       <ul class="cfacts">
         <li><b>Nothing to install.</b> It runs in this tab.</li>
         <li><b>Read-only.</b> It never edits your file.</li>
@@ -72,6 +72,7 @@
     <div class="lib-l">
       <button class="lib-pill" id="libMenu" type="button" aria-haspopup="dialog"><span class="mark sm" aria-hidden="true"></span> Files</button>
       <div class="lib-title"><b id="libName">Template Library</b><span class="lab" id="libSub">Sorted from Figma</span></div>
+      <div class="modeseg" id="modeSeg" role="group" aria-label="Show"><button type="button" data-m="email" aria-pressed="true">Emails <em id="mEmailN">0</em></button><button type="button" data-m="part" aria-pressed="false">Parts <em id="mPartN">0</em></button></div>
     </div>
     <div class="lib-r">
       <label class="lib-search"><span class="sr">Search templates</span><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="libQ" type="search" placeholder="Search names" autocomplete="off"></label>
@@ -80,9 +81,7 @@
     </div>
   </header>
   <div class="lib-filter" id="libFilter" hidden>
-    <div class="fgrp"><span class="lab">Type</span><div class="fchips" id="fType"></div></div>
-    <div class="fgrp"><span class="lab">Must include these sections</span><div class="fchips" id="fSec"></div></div>
-    <div class="fgrp"><span class="lab">Brand</span><div class="fchips" id="fBrand"></div></div>
+    <div class="fgroups" id="fGroups"></div>
     <div class="frow"><button type="button" class="link-btn" id="fClear">Clear filters</button><span class="lab" id="fCount"></span></div>
   </div>
   <p class="lib-hint lab" id="libHint">Drag to move · ⌘ scroll to zoom · Hover to find · Click to open</p>

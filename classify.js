@@ -186,7 +186,7 @@
       (byBrand[it.brand] || (byBrand[it.brand] = [])).push(it);
     });
     Object.keys(byBrand).forEach(function (b) {
-      var list = byBrand[b];
+      var list = byBrand[b].filter(function (it) { return it.kind === 'email'; });
       var ys = list.filter(function (it) { return it.date && !it._alt; }).map(function (it) { return Math.floor(it.date / 10000); }).sort();
       var med = ys.length ? ys[ys.length >> 1] : 0;
       list.forEach(function (it) {
@@ -231,6 +231,7 @@
 
     var date = parseDate(name), lang = parseLang(name, layers);
     return {
+      kind: 'email',
       id: node.id,
       file: ctx.fileKey,
       fileName: ctx.fileName,
@@ -253,18 +254,104 @@
     };
   }
 
+  /* ---------- Atomic Emails parts ----------
+     The contract the atomic-extractor skill (and any designer) can follow:
+     a page, section or frame named "Parts" / "Atomic" / "Components" / "Library" holds parts;
+     inside it, "Atoms" / "Molecules" / "Organisms" (or the workshop's "Elements" / "Containers" / "Sections")
+     set the level. A part can also carry its level in its own name: "Atom / Button / Primary".
+     Components and component sets anywhere in a file count as parts too. No level word? Size decides. */
+  var LEVELS = [
+    ['Atoms', /^(atoms?|elements?|[áa]tomos?|elementos?)\b/i],
+    ['Molecules', /^(molecules?|containers?|mol[ée]culas?|contenedores?)\b/i],
+    ['Organisms', /^(organisms?|organismos?|sections?|secciones?)\b/i]
+  ];
+  var PARTS_BOX = /^(parts?|atomic( emails?| parts| library)?|piezas|partes|components?|componentes|library|biblioteca|design system|ds)\b/i;
+  var PART_TYPES = [
+    ['Announcement bar', /announcement|alert bar|pre-?header|ticker|top bar/i],
+    ['Hero', /hero|banner|above the fold|main image/i],
+    ['Header & nav', /header|\bnav\b|navigation|menu|logo bar/i],
+    ['Footer', /footer|unsubscribe|legal/i],
+    ['Product grid', /product (grid|row|feed|list)|products|collection|catalog|feed|grid/i],
+    ['Product card', /product|pdp|item card|price/i],
+    ['Reviews', /review|testimon|rating|stars|social proof|trust ?pilot|\bugc\b|quote/i],
+    ['Discount code', /discount|coupon|promo code|c[oó]digo|voucher|\bcode\b/i],
+    ['Countdown', /countdown|timer/i],
+    ['Article & listicle', /article|blog|listicle|\bnews\b/i],
+    ['Bento', /bento/i],
+    ['Features & USPs', /\busps?\b|feature|benefit|guarantee|shipping|icon (row|list|grid)/i],
+    ['Button & CTA', /button|\bbtns?\b|\bctas?\b|\blinks?\b/i],
+    ['Logo', /logo/i],
+    ['Social icons', /social|instagram|facebook|tiktok/i],
+    ['Video', /video|\bgif\b|play/i],
+    ['Image', /image|\bimg\b|photo|picture|visual/i],
+    ['Text', /heading|headline|title|text|paragraph|copy|body|eyebrow|subtitle|caption/i],
+    ['Divider & spacer', /divider|spacer|separator|\bline\b|\bgap\b/i],
+    ['Badge & label', /badge|\btags?\b|label|\bpills?\b|sticker|\bchips?\b/i],
+    ['Icon', /icon/i]
+  ];
+  var PART_NODES = { COMPONENT_SET: 1, COMPONENT: 1, INSTANCE: 1, FRAME: 1, GROUP: 1 };
+  function lead(s) { return clean(s).replace(/^[\d\s.\-–—_|:#•]+/, ''); } // "01 — Atoms" -> "Atoms"
+  function levelOf(name) { var t = lead(name); for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i][1].test(t)) return LEVELS[i][0]; return null; }
+  // "Atoms", "01 — Atoms", "Atoms (buttons)" name a level box; "Atom / Button" names a part
+  function levelBox(name) { var t = lead(name); for (var i = 0; i < LEVELS.length; i++) { var m = t.match(LEVELS[i][1]); if (m) return /^\s*(\(.*\))?\s*$/.test(t.slice(m[0].length)) ? LEVELS[i][0] : null; } return null; }
+  function isPartsBox(name) { return PARTS_BOX.test(lead(name)); }
+  function hasComponents(n) { return (n.children || []).some(function (c) { return c.type === 'COMPONENT' || c.type === 'COMPONENT_SET'; }); }
+  function partTitle(name) {
+    var segs = clean(name).split(/\s*[\/|]\s*/).filter(Boolean);
+    if (segs.length > 1 && levelOf(segs[0])) segs.shift();
+    return segs.join(' / ').replace(/^(atom|molecule|organism|element|container|section)s?\s*[-–:]\s*/i, '') || clean(name);
+  }
+  function classifyPart(node, ctx) {
+    var b = box(node), name = node.name || '';
+    var level = levelOf(name) || ctx.level, by = level ? 'name' : 'size';
+    if (!level) level = b.width >= 480 ? 'Organisms' : (b.height <= 90 && b.width <= 360) || b.width * b.height < 30000 ? 'Atoms' : 'Molecules';
+    var type = first(PART_TYPES, clean(name)) || (ctx.group && first(PART_TYPES, clean(ctx.group))) || 'Other';
+    var brand = ctx.pbrand || (ctx.page && ctx.pageCount > 1 && !GENERIC.test(clean(ctx.page)) && !isPartsBox(ctx.page) && !levelOf(ctx.page) && !/^(emails?|templates?|campaigns?|flows?)$/i.test(lead(ctx.page)) ? clean(ctx.page) : clean(ctx.fileName || 'Unsorted'));
+    return {
+      kind: 'part',
+      id: node.id, file: ctx.fileKey, fileName: ctx.fileName, page: clean(ctx.page),
+      name: clean(name), title: partTitle(name), brand: brand,
+      level: level, levelBy: by, part: type,
+      fit: b.width >= 480 ? 'Full width' : b.width >= 240 ? 'Half width' : 'Small',
+      variants: node.type === 'COMPONENT_SET' ? (node.children || []).length : 0,
+      nodeType: node.type, where: ctx.path || '', folder: ctx.group || (ctx.level ? ctx.level : 'Loose parts'),
+      w: Math.round(b.width), h: Math.round(b.height)
+    };
+  }
+
   /* ---------- walk a whole file ---------- */
   // Returns { items, sectionsToExpand } — SECTIONs whose children were cut off by the depth limit.
   function collect(file, fileKey) {
     var items = [], pending = [];
     var pages = (file.document && file.document.children) || [];
     pages.forEach(function (page) {
-      walk(page.children || [], { fileKey: fileKey, fileName: file.name, page: page.name, pageCount: pages.length, container: null }, 0);
+      var pl = levelBox(page.name), pp = pl || isPartsBox(page.name);
+      walk(page.children || [], { fileKey: fileKey, fileName: file.name, page: page.name, pageCount: pages.length, container: null, parts: !!pp, level: pl, path: pp ? clean(page.name) : '' }, 0);
     });
     function walk(nodes, ctx, depth) {
       nodes.forEach(function (n) {
         if (n.visible === false) return;
+        var nm = n.name || '', lvl = levelBox(nm), boxy = n.type === 'SECTION' || n.type === 'FRAME' || n.type === 'GROUP';
+        var path = (ctx.path ? ctx.path + ' / ' : '') + clean(nm);
+        if (ctx.parts) {
+          // inside a parts area: sections, level/parts-named frames and frames holding components are containers
+          var holder = n.type === 'SECTION' || (boxy && (lvl || isPartsBox(nm) || hasComponents(n)));
+          if (holder) {
+            var c1 = Object.assign({}, ctx, { level: lvl || ctx.level, path: path, group: lvl || isPartsBox(nm) ? ctx.group : clean(nm) });
+            if (!n.children) { pending.push({ id: n.id, ctx: c1, name: n.name }); return; }
+            if (depth < 6) walk(n.children, c1, depth + 1);
+            return;
+          }
+          if (PART_NODES[n.type]) items.push(classifyPart(n, ctx));
+          return;
+        }
+        if (boxy && (lvl || isPartsBox(nm)) && !emailSized(n)) {
+          var c3 = Object.assign({}, ctx, { parts: true, level: lvl, path: path, pbrand: ctx.container && !GENERIC.test(clean(ctx.container)) ? clean(ctx.container) : null });
+          if (!n.children) { pending.push({ id: n.id, ctx: c3, name: n.name }); return; }
+          walk(n.children, c3, depth + 1); return;
+        }
         if (emailSized(n)) { items.push(classify(n, ctx)); return; }
+        if (n.type === 'COMPONENT' || n.type === 'COMPONENT_SET') { items.push(classifyPart(n, Object.assign({}, ctx, { pbrand: ctx.container && !GENERIC.test(clean(ctx.container)) ? clean(ctx.container) : null }))); return; }
         if (n.type === 'SECTION' || (n.type === 'FRAME' && depth === 0 && !emailSized(n)) || n.type === 'GROUP') {
           if (!n.children) { if (n.type === 'SECTION' || n.type === 'FRAME') pending.push({ id: n.id, ctx: ctx, name: n.name }); return; }
           var c2 = Object.assign({}, ctx, { container: n.type === 'SECTION' || depth === 0 ? (ctx.container && GENERIC.test(clean(n.name)) ? ctx.container : n.name) : ctx.container });
@@ -275,7 +362,8 @@
     return { items: items, pending: pending, walk: function (nodes, ctx) { var before = items.length; walk(nodes, ctx, 1); return items.slice(before); } };
   }
 
-  var API = { clean: clean, classify: classify, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized,
+  var API = { clean: clean, classify: classify, collect: collect, mergeBrands: mergeBrands, finalize: finalize, parseDate: parseDate, parseLang: parseLang, title: title, emailSized: emailSized, levelOf: levelOf, partTitle: partTitle,
+    LEVELS: LEVELS.map(function (s) { return s[0]; }), PART_TYPES: PART_TYPES.map(function (s) { return s[0]; }).concat(['Other']),
     SECTIONS: SECTIONS.map(function (s) { return s[0]; }), FLOWS: FLOWS.map(function (s) { return s[0]; }), CATS: CATS.map(function (s) { return s[0]; }) };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.TAS = API;
 })(this);

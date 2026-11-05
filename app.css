@@ -98,6 +98,20 @@ h1 em{font-style:normal;color:var(--green)}
 .lc-meta{display:flex;justify-content:space-between;gap:8px;font:600 9.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:10px 2px 0;white-space:nowrap}
 .lc-meta span{overflow:hidden;text-overflow:ellipsis}
 .lc-meta .fl{color:var(--green-2)}
+.lc-meta .lv{flex:none;border-radius:99px;padding:3px 6px;margin:-3px 0;letter-spacing:.06em}
+.lv-a{background:#fff3d6;color:#7a5600}.lv-m{background:#e3f0ff;color:#1d4f8a}.lv-o{background:var(--mint);color:var(--green-2)}
+.lc-img.fit{background:#f6f8f7 repeating-conic-gradient(#eef2f0 0 25%,#fff 0 50%) 0 0/16px 16px;display:grid;place-items:center}
+.lc-img.fit img{width:auto;height:auto;min-height:0;max-width:88%;max-height:88%;object-fit:contain;object-position:center;box-shadow:0 6px 18px -10px rgba(16,28,22,.35)}
+.modeseg{display:flex;gap:2px;background:#fff;border:1px solid var(--line-2);border-radius:99px;padding:3px}
+.modeseg button{font:700 12px/1 var(--sans);letter-spacing:.04em;border:0;background:none;color:var(--muted);border-radius:99px;padding:8px 11px;cursor:pointer}
+.modeseg button em{font-style:normal;font-weight:600;color:var(--dim);margin-left:3px}
+.modeseg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.modeseg button[aria-pressed=true] em{color:#b9c4be}
+.fgroups{display:grid;gap:14px}
+.lbs.partv{align-items:center;background:repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/24px 24px}
+.lbs.partv img{background:transparent;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+.lib-empty i{font-style:normal;font-weight:700;color:var(--ink)}
+.lib-empty span{max-width:44ch}
 .lc-t{font:500 13px/1.25 var(--sans);color:var(--ink);padding:5px 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lc-dot{position:absolute;top:13px;right:13px;width:10px;height:10px;border-radius:50%;background:var(--green-3);box-shadow:0 0 0 3px rgba(255,255,255,.95);transform:scale(0);transition:transform .45s cubic-bezier(.3,1.7,.5,1)}
 .lc.seen .lc-dot{transform:scale(1)}
@@ -175,7 +189,7 @@ h1 em{font-style:normal;color:var(--green)}
 .lib-flash.on{opacity:1}
 @media (max-width:900px){.lib-search input{width:110px}.lib-score{display:none}}
 @media (max-width:760px){
-  .lib-top{flex-wrap:wrap}.lib-title{display:none}
+  .lib-top{flex-wrap:wrap}.lib-title{display:none}.modeseg button{padding:8px 9px}
   .lib-hint{top:auto;bottom:calc(128px + env(safe-area-inset-bottom,0px));white-space:normal;width:calc(100vw - 32px);text-align:center;border-radius:12px}
   .lib-dock .dl{display:none}
   .lib-status{bottom:calc(128px + env(safe-area-inset-bottom,0px))}

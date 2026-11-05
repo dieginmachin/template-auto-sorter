@@ -24,6 +24,29 @@ A template is any frame, component, instance or group 320–900px wide and at le
 | Year | `YYMMDD` / `DDMMYY` (settled per brand), `Nov 10, 2024`, `2025 / May / 1`, `02.10.24`, `06/30/25`. |
 | Length | Short < 1600px, Medium < 3000px, Long. |
 
+## Parts mode (Atomic Emails)
+
+The **Emails / Parts** switch opens a second library for the pieces the Atomic Emails method cuts an email into. Group by Level, Type, Folder, Brand, Width or File.
+
+What counts as a part, in order:
+
+1. Anything inside a page, section or frame whose name starts with **Parts**, **Atomic**, **Components**, **Library** (or Piezas, Componentes, Design system).
+2. Inside that area, sections or frames named **Atoms / Molecules / Organisms** set the level. The workshop's **Elements / Containers / Sections** and the Spanish names work too. "01 — Atoms" is fine; "Atom / Button" is a part, not a folder.
+3. A part's own name can carry its level: `Atom / Button / Primary`, `Organism - Hero BF`.
+4. Components and component sets anywhere else in the file are parts too (a component set counts once, with its variant count).
+5. No level word anywhere: size decides. 480px wide or more is an organism; up to 90px tall and 360px wide (or under 30,000px²) is an atom; the rest are molecules. The viewer marks these "(by size)".
+
+Type comes from the part's name, then its folder's name: hero, header & nav, announcement bar, footer, product grid, product card, reviews, discount code, countdown, article, bento, features & USPs, button & CTA, logo, social icons, video, image, text, divider & spacer, badge & label, icon. Folder is the nearest named section or frame (for example "Extracted from BF email"). Brand is the Figma Section around the parts area, else a brand-named page, else the file name (one file per brand).
+
+Recommended layout for extractor output:
+
+```
+Page "Parts"
+  Section "Atoms"       → Button / Primary, Badge / Sale, Divider, Logo …
+  Section "Molecules"   → Product card, Review card, Discount code block …
+  Section "Organisms"   → Hero / Split image, Product grid / 2x2, Footer / Standard …
+```
+
 ## Files
 
 - `index.html`: markup and CSP
