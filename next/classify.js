@@ -442,7 +442,7 @@
           }
           // a frame the API cut off (no children loaded) may be a folder of parts one level too deep
           // (Parts page > level section > type group > grid > components): open it before deciding
-          if ((n.type === 'FRAME' || n.type === 'GROUP') && (!n.children || n.children.some(function (c) { return (c.type === 'FRAME' || c.type === 'GROUP') && !c.children; }))) { pending.push({ id: n.id, ctx: Object.assign({}, ctx, { path: path, group: clean(nm) }), name: n.name, self: true, pgroup: ctx.group }); return; }
+          if ((n.type === 'FRAME' || n.type === 'GROUP') && (!(n.children || []).length || n.children.some(function (c) { return (c.type === 'FRAME' || c.type === 'GROUP') && !(c.children || []).length; }))) { pending.push({ id: n.id, ctx: Object.assign({}, ctx, { path: path, group: clean(nm) }), name: n.name, self: true, pgroup: ctx.group }); return; }
           if (PART_NODES[n.type]) items.push(classifyPart(n, ctx));
           return;
         }
