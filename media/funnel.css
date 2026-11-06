@@ -139,3 +139,4 @@ p{margin:0}
 @media (max-width:680px){.steps{grid-template-columns:1fr}.steps>div{border-right:0;border-bottom:1px solid var(--rule);padding-left:0!important}.co-two{grid-template-columns:1fr}.tl li{grid-template-columns:1fr;gap:4px}.who span{display:none}.btn{flex-direction:column;align-items:flex-start;gap:6px}.btn small{text-align:left}}
 @media (max-width:420px){.grid7{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.js .rv{opacity:1;transform:none}}
+.co-form .btn{justify-content:center;gap:8px}.co-form .btn small{margin-left:6px}
