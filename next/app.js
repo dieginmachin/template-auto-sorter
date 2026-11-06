@@ -635,7 +635,25 @@
   /* =========================================================
      START
      ========================================================= */
+  // Sample library (demo.html): a file sorted and atomized ahead of time, thumbnails served with the app.
+  // Nothing is read from Figma and nothing is saved, so it can sit in an iframe on the sales pages.
+  function startDemo() {
+    var D = window.TAS_DEMO, T = function (id) { return 'media/demo/t/' + String(id).replace(/:/g, '-') + '.jpg'; };
+    document.documentElement.classList.add('demo');
+    FG.thumb = function (k, id, cb) { setTimeout(function () { cb(T(id)); }, 20); };
+    FG.thumbFor = function (k, id) { return T(id); };
+    FG.full = function (k, id) { return Promise.resolve(T(id)); };
+    FG.cancel = function () {}; FG.clearQueue = function () {};
+    FG.atoms = function () { return Promise.resolve({ parts: D.parts.map(function (x) { return Object.assign({}, x); }) }); };
+    FG.store = function (k, v) { return v === undefined ? null : undefined; };
+    try { Object.defineProperty(PRO, 'on', { get: function () { return true; } }); } catch (e) {}
+    PRO.gate = function () { return true; };
+    $('#libMenu').addEventListener('click', function (e) { e.stopImmediatePropagation(); window.open('./', '_blank', 'noopener'); }, true);
+    openLibrary([D.data]);
+  }
+
   (function start() {
+    if (window.TAS_DEMO) return startDemo();
     var files = FG.files(), sets = files.map(function (f) { return FG.cached(f.key); });
     if (FG.token() && files.length && sets.every(Boolean)) openLibrary(sets);
     else showConnect();

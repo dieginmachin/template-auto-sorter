@@ -326,3 +326,12 @@ article.h[hidden]{display:none}
 @media (max-width:860px){.help{grid-template-columns:1fr;gap:24px}.htoc{position:static;display:none}}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---------- live sample (demo.html) ---------- */
+.demo-tag{position:absolute;z-index:6;left:50%;bottom:calc(122px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:var(--sheet);font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:9px 14px;border-radius:99px;text-decoration:none;white-space:nowrap;box-shadow:0 14px 30px -14px rgba(0,0,0,.5)}
+.demo-tag b{font-weight:500;color:#9fe0b8}
+.demo-tag .dotp{color:#3ddc84;animation:dpulse 1.6s ease-in-out infinite}
+@keyframes dpulse{50%{opacity:.25}}
+html.demo #libAtomize{display:none!important}
+html.demo .lib-score{display:none}
+@media (max-width:760px){.demo-tag{bottom:calc(170px + env(safe-area-inset-bottom,0px));font-size:10px}}
