@@ -650,6 +650,8 @@
     PRO.gate = function () { return true; };
     $('#libMenu').addEventListener('click', function (e) { e.stopImmediatePropagation(); window.open('./', '_blank', 'noopener'); }, true);
     openLibrary([D.data]);
+    // open on something readable: fly into the first group once the canvas has settled
+    setTimeout(function () { var b = document.querySelector('#libChips button'); if (b) b.click(); }, 1400);
   }
 
   (function start() {
