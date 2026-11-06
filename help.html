@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Auto-Sorter Help</title>
+<meta name="description" content="How to connect a Figma file, name your library so it sorts perfectly, use the canvas, unlock Pro and fix common problems.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23161614'/%3E%3Crect x='7' y='7' width='8' height='11' rx='2' fill='%23fff'/%3E%3Crect x='17' y='7' width='8' height='7' rx='2' fill='%23fff' opacity='.7'/%3E%3Crect x='17' y='16' width='8' height='9' rx='2' fill='%23fff'/%3E%3Crect x='7' y='20' width='8' height='5' rx='2' fill='%23fff' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap">
+<link rel="stylesheet" href="app.css?v=11">
+</head>
+<body>
+<header class="bar">
+  <a class="who" href="./"><span class="mark" aria-hidden="true"></span>Hall of Templates <span>· Studio Apps Nº 01</span></a>
+  <nav><a class="chip" href="./">Open the sorter</a></nav>
+</header>
+
+<div class="help">
+  <nav class="htoc" aria-label="Articles">
+    <p class="lab">Start</p>
+    <a href="#what">What it does</a><a href="#start">Sort a file in 3 steps</a><a href="#token">Your Figma token</a><a href="#privacy">Privacy</a>
+    <p class="lab">Your file</p>
+    <a href="#emails">What counts as an email</a><a href="#naming">Naming that sorts</a><a href="#starter">The starter file</a>
+    <p class="lab">The canvas</p>
+    <a href="#canvas">Moving around</a><a href="#groups">Groups and filters</a>
+    <p class="lab">Pro</p>
+    <a href="#pro">What Pro adds</a><a href="#parts">The parts library</a><a href="#atomize">Atomize emails</a><a href="#extractor">Parts as Figma components</a>
+    <p class="lab">Help</p>
+    <a href="#trouble">Troubleshooting</a><a href="#faq">Questions</a>
+  </nav>
+
+  <main class="hmain">
+    <header>
+      <p class="lab"><b>Help center</b> · Template Auto-Sorter</p>
+      <h1>Everything about the sorter, on one page.</h1>
+      <p>Fifteen short articles. Start at the top if it&rsquo;s your first time, or search.</p>
+      <label class="hsearch"><span class="sr">Search the help center</span><svg width="15" height="15" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="hq" type="search" placeholder="Search: token, Pro key, slow thumbnails…" autocomplete="off"></label>
+    </header>
+
+    <article class="h" id="what">
+      <p class="lab">01 · Start</p>
+      <h2>What the Auto-Sorter does</h2>
+      <p>You have a Figma file (or five) full of email designs. The Auto-Sorter reads that file and lays every email out on one canvas, already grouped. You can see it by <b>brand</b>, by <b>type</b> (campaign or flow), by <b>category</b> (Black Friday, launches, social proof and more), by the <b>section</b> it&rsquo;s built around, and by <b>language</b>, <b>year</b> and <b>length</b>.</p>
+      <p>Click any card to see the full design. One more click opens that exact frame in Figma. Nothing gets copied or moved: the sorter is a map of your file, and Figma stays the source.</p>
+      <p>It&rsquo;s app Nº 01 of the Hall of Templates Studio Apps, the tools we use in our own email design studio.</p>
+    </article>
+
+    <article class="h" id="start">
+      <p class="lab">02 · Start</p>
+      <h2>Sort a file in 3 steps</h2>
+      <ol>
+        <li><b>Copy your file link.</b> Open the Figma file with your email designs and copy the link from the browser bar (or Share → Copy link).</li>
+        <li><b>Make a Figma token.</b> In Figma: your name (top left) → Settings → Security → Personal access tokens → <b>Generate new token</b>. Name it &ldquo;Auto-Sorter&rdquo;, set <b>File content</b> to <b>Read-only</b>, leave everything else off, create it and copy it. Figma shows it only once. <a href="#token">More on tokens</a></li>
+        <li><b>Paste both and click Sort my library.</b> A big file takes up to a minute the first time. After that the library opens instantly in the same browser.</li>
+      </ol>
+      <div class="note ok">Added new designs in Figma? Open <b>Files</b> (top left of the canvas) → <b>Re-sort from Figma</b>.</div>
+    </article>
+
+    <article class="h" id="token">
+      <p class="lab">03 · Start</p>
+      <h2>Your Figma token, explained</h2>
+      <p>A personal access token is how Figma lets an app read a file for you without your password. The sorter needs one permission only, <b>File content: Read-only</b>. With it, the sorter can see layer names and sizes and ask Figma for preview images. It can&rsquo;t edit, comment, delete or see anything else.</p>
+      <h3>Where it lives</h3>
+      <p>The token is saved in this browser only. With &ldquo;Remember on this device&rdquo; on, it stays until you remove it. With it off, it&rsquo;s forgotten when you close the tab. The page only sends it to <code>api.figma.com</code>; a browser rule built into the page blocks every other address.</p>
+      <h3>Turn it off any time</h3>
+      <p>In Figma, Settings → Security → Personal access tokens, click <b>Revoke</b> next to &ldquo;Auto-Sorter&rdquo;. In the sorter, <b>Files → Forget token and files</b> removes it from the browser.</p>
+      <div class="note">Tokens can expire (Figma lets you pick 30 or 90 days, or no expiry). When one does, the sorter asks for a new one. Your sorted library stays.</div>
+    </article>
+
+    <article class="h" id="privacy">
+      <p class="lab">04 · Start</p>
+      <h2>Privacy and security</h2>
+      <ul>
+        <li><b>No server.</b> The sorter is a static web page. Your browser talks to Figma directly; nothing passes through us.</li>
+        <li><b>No account, no tracking.</b> We don&rsquo;t see your files, your token, your designs or how you use the app.</li>
+        <li><b>Read-only.</b> It never writes to your Figma file.</li>
+        <li><b>Stored locally.</b> Your sorted library, thumbnails and Pro unlock are saved in this browser&rsquo;s storage. Clearing site data removes them.</li>
+      </ul>
+      <p>Client files are safe to sort. Just keep in mind that anyone using your computer and browser can open the library you sorted there.</p>
+    </article>
+
+    <article class="h" id="emails">
+      <p class="lab">05 · Your file</p>
+      <h2>What counts as an email</h2>
+      <p>The sorter treats a frame, component, instance or group as an email when it&rsquo;s <b>320 to 900px wide</b> and at least <b>three quarters as tall as it is wide</b>. That covers 600px email designs, mobile previews and long newsletters. Banners, icons and loose sections are ignored.</p>
+      <p>Emailify building blocks (🚣 rows and 🎁 wrappers) are never counted as emails, even when they&rsquo;re big.</p>
+      <p>It looks inside pages, Figma Sections and frames, including sections nested a few levels deep.</p>
+    </article>
+
+    <article class="h" id="naming">
+      <p class="lab">06 · Your file</p>
+      <h2>Naming that sorts perfectly</h2>
+      <p>The sorter reads names; it doesn&rsquo;t guess from pixels. A few habits make every group land right:</p>
+      <table>
+        <thead><tr><th>Group</th><th>What it reads</th><th>Do this</th></tr></thead>
+        <tbody>
+          <tr><td>Brand</td><td>The Figma Section the email sits in</td><td>One Section per brand: &ldquo;Acme Co&rdquo;, &ldquo;Bluleaf&rdquo;</td></tr>
+          <tr><td>Type</td><td>Flow words in the frame name</td><td>&ldquo;Welcome Series: Email #2&rdquo;, &ldquo;Abandoned Cart 1&rdquo;, &ldquo;Win-back&rdquo;. Everything else is a campaign.</td></tr>
+          <tr><td>Category</td><td>Keywords in the name, then the layers</td><td>&ldquo;Black Friday early access&rdquo;, &ldquo;New in: Summer drop&rdquo;, &ldquo;Reviews roundup&rdquo;</td></tr>
+          <tr><td>Section</td><td>Names of the email&rsquo;s top-level layers</td><td>Name blocks Hero, Product grid, Reviews, Discount code, Footer</td></tr>
+          <tr><td>Language</td><td>Tags like <code>(EN)</code> or <code>NL |</code></td><td>&ldquo;(FR) Spring sale&rdquo;</td></tr>
+          <tr><td>Year</td><td>Dates in the name</td><td><code>250514</code>, &ldquo;May 14, 2025&rdquo;, <code>14.05.25</code></td></tr>
+          <tr><td>Length</td><td>Frame height</td><td>Nothing to do: under 1600px is short, under 3000px medium</td></tr>
+        </tbody>
+      </table>
+      <p>Categories understand English, Spanish and Dutch keywords. When a name says nothing, the layers decide: a Reviews block makes it social proof, a Discount code block makes it a sale.</p>
+    </article>
+
+    <article class="h" id="starter">
+      <p class="lab">07 · Your file</p>
+      <h2>The starter file</h2>
+      <p>Starting from scratch, or want to see the rules in action? <a href="https://www.figma.com/design/CyuSgQXpdVmXA5kkLVhfMK/Auto-Sorter-Starter-File" target="_blank" rel="noopener">Open the starter file</a>, click the file name → <b>Duplicate</b>, and replace the examples with your designs.</p>
+      <p>It has a Read me page, an Emails page with two brand Sections and six example emails, and a Parts page with atoms, molecules and organisms as components. Everything in it is named the way the sorter reads, so it sorts 6 emails and 23 parts with no guessing.</p>
+    </article>
+
+    <article class="h" id="canvas">
+      <p class="lab">08 · The canvas</p>
+      <h2>Moving around</h2>
+      <ul>
+        <li><b>Drag</b> to move. <b>⌘ or Ctrl + scroll</b> (or pinch) to zoom. Plain scrolling pans.</li>
+        <li><b>Hover</b> a card to light up its closest relatives in the same group.</li>
+        <li><b>Click</b> a card for the full-size design, its tags and <b>Open in Figma</b>. Arrow keys step through cards.</li>
+        <li><b>Chips</b> above the dock fly you to a group. <b>Fit</b> shows everything. <b>Surprise me</b> picks a design you haven&rsquo;t opened yet.</li>
+        <li>The <b>Discovered</b> meter counts the designs you&rsquo;ve opened, so you can tell what you&rsquo;ve already reviewed.</li>
+        <li><b>Search</b> filters by name as you type.</li>
+      </ul>
+      <div class="note">Previews appear once you&rsquo;re zoomed in enough to read a card, so zoomed-out views stay fast.</div>
+    </article>
+
+    <article class="h" id="groups">
+      <p class="lab">09 · The canvas</p>
+      <h2>Groups and filters</h2>
+      <p>The dock at the bottom regroups the whole canvas: <b>All, Brand, Type, Category, Section, Language, Year, Length</b> and, with several files in Pro, <b>File</b>.</p>
+      <p><b>Filter</b> (top right) narrows the canvas to what you need right now, for example only Black Friday campaigns with a product grid, in Spanish. Filters combine with the grouping and the search.</p>
+    </article>
+
+    <article class="h" id="pro">
+      <p class="lab">10 · Pro</p>
+      <h2>What Pro adds, and how to unlock it</h2>
+      <table>
+        <thead><tr><th></th><th>Free</th><th>Pro · $9 once</th></tr></thead>
+        <tbody>
+          <tr><td>Sort every email in a file</td><td>✓</td><td>✓</td></tr>
+          <tr><td>All groups, filters, search, viewer</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Files on one canvas</td><td>1</td><td>As many as you like</td></tr>
+          <tr><td>Parts library (atoms, molecules, organisms)</td><td>No</td><td>✓</td></tr>
+          <tr><td>Atomize emails with reuse counts</td><td>No</td><td>✓</td></tr>
+          <tr><td>Future Studio App features</td><td>No</td><td>✓</td></tr>
+        </tbody>
+      </table>
+      <h3>Unlock</h3>
+      <ol>
+        <li>Your Pro key is in your receipt email and on your access page. It looks like <code>HOT-SORT-XXXX-XXXX</code>.</li>
+        <li>Open the sorter, click <b>Pro</b> (top right of the start screen, or any Pro feature), paste the key and click <b>Unlock</b>. The &ldquo;Unlock in one click&rdquo; button on your access page does the same.</li>
+      </ol>
+      <p>Pro is remembered per browser. On a new computer or browser, paste the key once more. Bought Atomic Emails with the Auto-Sorter add-on? Your key is on that access page too.</p>
+    </article>
+
+    <article class="h" id="parts">
+      <p class="lab">11 · Pro</p>
+      <h2>The parts library</h2>
+      <p>Switch the top toggle from <b>Emails</b> to <b>Parts</b> to see the pieces your emails are made of, the way the Atomic Emails method names them:</p>
+      <ul>
+        <li><b>Atoms</b> (elements): buttons, badges, logos, social icons.</li>
+        <li><b>Molecules</b> (containers): a product card, an image with text, a review card.</li>
+        <li><b>Organisms</b> (sections): a hero, a product grid, a footer.</li>
+      </ul>
+      <p>Parts come from two places: a page in your file named <b>Parts</b> (with sections named Atoms, Molecules and Organisms), and parts the sorter finds by <a href="#atomize">atomizing your emails</a>. Group them by level, type, brand, how many emails use them, or where they came from.</p>
+    </article>
+
+    <article class="h" id="atomize">
+      <p class="lab">12 · Pro</p>
+      <h2>Atomize emails</h2>
+      <p>In Parts mode, <b>Atomize emails</b> opens every email in your files and breaks it into organisms, molecules and atoms. Parts that are identical across emails (same name, size, structure and text) collapse into one, with a count: &ldquo;used in 34 emails&rdquo;. That count shows you which sections and buttons your whole library is really built from.</p>
+      <ul>
+        <li>It&rsquo;s read-only. Nothing is written to Figma.</li>
+        <li>It takes a few minutes on a big file. Our three 1,000-template files (832 emails) took about 8: 17,876 parts, 8,227 unique.</li>
+        <li>Results are kept in this browser. Run it again after big changes.</li>
+      </ul>
+      <div class="note ai">Atomize reads Emailify structure directly: 🚣 rows become organisms, 🏛️ columns become molecules, 🔗 buttons and logos become atoms. Files built another way use the email&rsquo;s full-width blocks as organisms.</div>
+    </article>
+
+    <article class="h" id="extractor">
+      <p class="lab">13 · Pro</p>
+      <h2>Turn parts into real Figma components</h2>
+      <p>The sorter shows you your parts. To make them reusable components inside Figma, use the <b>atomic-extractor</b> skill for Claude. It&rsquo;s included in <b>Atomic Emails</b>, our core workshop. Claude dry-runs first, then builds a Parts page in your file: one component per part, grouped by type, ranked by reuse. The sorter reads that page in Parts mode.</p>
+      <p>On a real client file it turned 392 emails into a 240-component library in two runs.</p>
+    </article>
+
+    <article class="h" id="trouble">
+      <p class="lab">14 · Help</p>
+      <h2>Troubleshooting</h2>
+      <h3>&ldquo;Figma says this token is not valid&rdquo;</h3>
+      <p>The token was revoked, expired or copied with a space. Make a new one (File content: Read-only) and paste it with <b>Files → Change token</b>.</p>
+      <h3>&ldquo;No access to this file&rdquo;</h3>
+      <p>The token belongs to a Figma account that can&rsquo;t open that file. Open the link in Figma with the same account. If it&rsquo;s a client&rsquo;s file, ask for view access.</p>
+      <h3>&ldquo;No email templates found&rdquo;</h3>
+      <p>Nothing in the file matches the <a href="#emails">email size rule</a>. Check that the designs are frames (not one giant image) and 320 to 900px wide.</p>
+      <h3>Previews load slowly</h3>
+      <p>Figma renders each preview on its own servers, and image-heavy emails can take a few seconds each. The counter at the top left shows how many are left. Once rendered, previews are cached for 20 days.</p>
+      <h3>&ldquo;Figma asked us to slow down&rdquo;</h3>
+      <p>Figma limits how many requests a token makes per minute. The sorter waits and carries on by itself; leave the tab open.</p>
+      <h3>My library or Pro disappeared</h3>
+      <p>Browser data was cleared, or you&rsquo;re on another browser or computer. Sort again and paste your Pro key once more.</p>
+    </article>
+
+    <article class="h" id="faq">
+      <p class="lab">15 · Help</p>
+      <h2>Questions</h2>
+      <h3>Do I need Emailify?</h3>
+      <p>No. Any Figma email design works. Emailify names make Atomize extra precise.</p>
+      <h3>Can my team use it?</h3>
+      <p>Yes. Each person uses their own Figma token on their own computer. Pro is personal: one key per buyer.</p>
+      <h3>Does it work on a phone?</h3>
+      <p>It opens on a phone or tablet, but sorting and browsing a big library is best on a laptop.</p>
+      <h3>Refunds?</h3>
+      <p>If Pro doesn&rsquo;t sort your file, email us within 30 days with the error you see. We&rsquo;ll fix it, or refund you, no questions.</p>
+      <h3>Still stuck?</h3>
+      <p>Email <a href="mailto:diego@halloftemplates.com">diego@halloftemplates.com</a> with a screenshot of the message on screen. Never send us your token.</p>
+    </article>
+  </main>
+</div>
+<footer class="ft"><span class="lab">Made by Hall of Templates · Not affiliated with Figma</span><nav><a href="./">Open the sorter</a><a href="#privacy">Privacy</a><a href="#pro">Pro</a></nav></footer>
+<script src="help.js?v=11"></script>
+</body>
+</html>

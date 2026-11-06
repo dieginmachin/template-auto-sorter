@@ -41,6 +41,7 @@
     lines.forEach(function (l) { var p = FG.parseUrl(l); if (p) { if (!parsed.some(function (x) { return x.key === p.key; })) parsed.push({ key: p.key, url: l }); } else bad.push(l); });
     if (bad.length) return showErr(cErr, 'That does not look like a Figma file link: ' + bad[0].slice(0, 80) + '. Copy it from the browser bar or Share → Copy link.');
     if (!tok) return showErr(cErr, 'Paste your Figma personal access token. It starts with "figd_".');
+    if (parsed.length > 1 && !PRO.gate('files')) return;
     FG.setToken(tok, $('#cRem').checked);
     try {
       var sets = await loadAll(parsed, function (t) { setBusy(true, t); });
@@ -119,7 +120,8 @@
     counts2(); ne = +$('#mEmailN').textContent; np = +$('#mPartN').textContent;
     var m = pref('mode'); if (m !== 'part' && m !== 'email') m = 'email';
     if (m === 'email' && !ne && np) m = 'part'; if (m === 'part' && !np && ne) m = 'email';
-    setMode(m, true);
+    if (!PRO.on) m = 'email'; // the parts library is Pro
+    setMode(m, true); lockParts();
   }
 
   function setMode(m, fresh) {
@@ -428,10 +430,12 @@
       b.addEventListener('click', function () { setGroup(g[0]); }); seg.appendChild(b);
     });
   }
-  $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.m); atomBtn(ALL.some(function (a) { return a.origin === 'email'; }) ? [1] : null); }); });
+  function lockParts() { $('#mPart').classList.toggle('locked', !PRO.on); }
+  PRO.onChange(function () { lockParts(); });
+  $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.m === 'part' && !PRO.gate('parts')) return; setMode(b.dataset.m); atomBtn(ALL.some(function (a) { return a.origin === 'email'; }) ? [1] : null); }); });
   var atomizing = false;
   async function runAtomize() {
-    if (atomizing) return; atomizing = true; var b = $('#libAtomize'); b.disabled = true;
+    if (atomizing || !PRO.gate('atomize')) return; atomizing = true; var b = $('#libAtomize'); b.disabled = true;
     try {
       for (var i = 0; i < SETS.length; i++) {
         var d = SETS[i];
@@ -613,6 +617,7 @@
     var u = $('#pUrl').value.trim(), p = FG.parseUrl(u), btn = this.querySelector('button');
     if (!p) return showErr(pErr, 'That does not look like a Figma file link.');
     if (FG.files().some(function (f) { return f.key === p.key; })) return showErr(pErr, 'That file is already in your library.');
+    if (FG.files().length >= 1 && !PRO.gate('files')) return;
     btn.disabled = true; btn.textContent = 'Sorting…';
     try { var d = (await loadAll([{ key: p.key }], function (t) { btn.textContent = 'Sorting…'; }))[0]; FG.files(FG.files().concat([{ key: p.key, url: u, name: d.name }])); $('#pUrl').value = ''; reopen(); }
     catch (err) { showErr(pErr, err.message); }

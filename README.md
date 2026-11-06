@@ -66,7 +66,10 @@ Read me page, an Emails page (sections "Acme Co" and "Bluleaf", 6 emails built f
 ## Files
 
 - `index.html`: markup and CSP
-- `app.css`: DFY / Atomic Emails styling (Figtree, Instrument Serif, green CTA)
+- `app.css`: Studio Apps styling (greige paper, ink, Newsreader, Geist + Geist Mono), shared by the help center
+- `pro.js`: Free/Pro. A key (`HOT-SORT-XXXX-XXXX`) unlocks Pro in the browser; only SHA-256 hashes live here. `…/#pro=KEY` unlocks in one click. Free = one file, Emails mode; Pro adds more files, Parts mode and Atomize
+- `help.html`, `help.js`: the help center (15 articles, search)
+- `next/`: staging copy for the next release (same origin, so it shares the cache and token)
 - `app.js`: connect screen, the canvas (after the portfolio's template library), filters, viewer, files panel
 - `figma.js`: REST client, caching, thumbnail queue
 - `classify.js`: the sorting rules (also runs in Node: `require('./classify.js')`)
