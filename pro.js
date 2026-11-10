@@ -1,6 +1,6 @@
 /* Auto-Sorter Pro: a key unlocks Pro in this browser.
    Only SHA-256 hashes of the keys live here; the keys are in the receipt email and the access page.
-   An honour-system lock for a $9 tool: nothing is sent anywhere, the app stays static. */
+   An honour-system lock for a $29 tool: nothing is sent anywhere, the app stays static. */
 (function () {
   'use strict';
   var BUY = 'https://halloftemplates.com/sorter-pro';   // ClickFunnels Pro sales page
