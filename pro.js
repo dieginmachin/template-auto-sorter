@@ -13,7 +13,6 @@
   var WHY = {
     files: 'Free sorts one file at a time. Pro puts every template file you own on the same canvas.',
     parts: 'The parts library is part of Pro: every atom, molecule and organism in your files, sorted by level and type.',
-    atomize: 'Atomize is part of Pro. It breaks every email into organisms, molecules and atoms, and counts how many emails reuse each part.',
     plan: '', connect: ''
   };
   var subs = [], on = false;
@@ -37,7 +36,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-pro]'), function (b) {
       if (b.classList.contains('chip')) { b.classList.toggle('is-pro', on); b.lastChild.textContent = on ? 'Pro is on' : 'Pro'; }
     });
-    var plan = $('#cPlan'); if (plan) plan.firstElementChild.innerHTML = on ? '<b>Pro</b> · every file · parts · atomize' : '<b>Free</b> · 1 file · every email sorted';
+    var plan = $('#cPlan'); if (plan) plan.firstElementChild.innerHTML = on ? '<b>Pro</b> · every file · parts' : '<b>Free</b> · 1 file · every email sorted';
     if (sheet) { $('#proOk').hidden = !on; $('#proKey').hidden = on; $('#proBuy').hidden = on; }
   }
   function open(why) {

@@ -47,7 +47,10 @@ Page "Parts"
   Section "Organisms"   → Hero / Split image, Product grid / 2x2, Footer / Standard …
 ```
 
-## Atomize emails (read-only)
+## Atomize emails (retired from the UI, Nov 11 2026)
+
+The **Atomize emails** button no longer runs: it opens a sheet (`#atom`) that sends people to Atomic Emails ($17) and the atomic-extractor skill, which builds a Parts page in Figma that Parts mode reads. The code below (`FG.atomizeFile`) is kept but not called. Earlier behaviour, for reference:
+
 
 In Parts mode, **Atomize emails** breaks every email in the connected files into parts without writing anything to Figma:
 
@@ -67,7 +70,7 @@ Read me page, an Emails page (sections "Acme Co" and "Bluleaf", 6 emails built f
 
 - `index.html`: markup and CSP
 - `app.css`: Studio Apps styling (greige paper, ink, Newsreader, Geist + Geist Mono), shared by the help center
-- `pro.js`: Free/Pro. A key (`HOT-SORT-XXXX-XXXX`) unlocks Pro in the browser; only SHA-256 hashes live here. `…/#pro=KEY` unlocks in one click. Free = one file, Emails mode; Pro adds more files, Parts mode and Atomize
+- `pro.js`: Free/Pro. A key (`HOT-SORT-XXXX-XXXX`) unlocks Pro in the browser; only SHA-256 hashes live here. `…/#pro=KEY` unlocks in one click. Free = one file, Emails mode; Pro adds more files and Parts mode (the Atomize button opens the Atomic Emails step)
 - `help.html`, `help.js`: the help center (15 articles, search)
 - `next/`: staging copy for the next release (same origin, so it shares the cache and token)
 - `app.js`: connect screen, the canvas (after the portfolio's template library), filters, viewer, files panel

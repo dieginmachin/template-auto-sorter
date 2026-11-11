@@ -148,8 +148,7 @@
           <tr><td>All groups, filters, search, viewer</td><td>✓</td><td>✓</td></tr>
           <tr><td>Files on one canvas</td><td>1</td><td>As many as you like</td></tr>
           <tr><td>Parts library (atoms, molecules, organisms)</td><td>No</td><td>✓</td></tr>
-          <tr><td>Atomize emails with reuse counts</td><td>No</td><td>✓</td></tr>
-          <tr><td>Future Studio App features</td><td>No</td><td>✓</td></tr>
+                    <tr><td>Future Studio App features</td><td>No</td><td>✓</td></tr>
         </tbody>
       </table>
       <h3>Unlock</h3>
@@ -169,23 +168,22 @@
         <li><b>Molecules</b> (containers): a product card, an image with text, a review card.</li>
         <li><b>Organisms</b> (sections): a hero, a product grid, a footer.</li>
       </ul>
-      <p>Parts come from two places: a page in your file named <b>Parts</b> (with sections named Atoms, Molecules and Organisms), and parts the sorter finds by <a href="#atomize">atomizing your emails</a>. Group them by level, type, brand, how many emails use them, or where they came from.</p>
+      <p>Parts come from two places: a page in your file named <b>Parts</b> (with sections named Atoms, Molecules and Organisms), and components anywhere in your files. To get a Parts page built from your emails, see <a href="#atomize">Atomize emails</a>. Group them by level, type, brand, how many emails use them, or where they came from.</p>
     </article>
 
     <article class="h" id="atomize">
-      <p class="lab">12 · Pro</p>
+      <p class="lab">12 · Next step</p>
       <h2>Atomize emails</h2>
-      <p>In Parts mode, <b>Atomize emails</b> opens every email in your files and breaks it into organisms, molecules and atoms. Parts that are identical across emails (same name, size, structure and text) collapse into one, with a count: &ldquo;used in 34 emails&rdquo;. That count shows you which sections and buttons your whole library is really built from.</p>
+      <p>Atomizing means breaking every email into organisms, molecules and atoms, and seeing which ones your whole library reuses. It happens in your Figma file, with Claude, and it is part of <b>Atomic Emails</b> ($17): the workshop plus the AI setup, the <b>atomic-extractor</b> skill.</p>
       <ul>
-        <li>It&rsquo;s read-only. Nothing is written to Figma.</li>
-        <li>It takes a few minutes on a big file. Our three 1,000-template files (832 emails) took about 8: 17,876 parts, 8,227 unique.</li>
-        <li>Results are kept in this browser. Run it again after big changes.</li>
+        <li>Claude dry-runs first and shows you what it found, then builds a Parts page in your file: one component per part, ranked by reuse.</li>
+        <li>Back in the sorter, switch to Parts (Pro). The sorter reads that page and sorts every part by level, type, brand and use.</li>
       </ul>
-      <div class="note ai">Atomize reads Emailify structure directly: 🚣 rows become organisms, 🏛️ columns become molecules, 🔗 buttons and logos become atoms. Files built another way use the email&rsquo;s full-width blocks as organisms.</div>
+      <p>The <b>Atomize emails</b> button in the sorter opens this step. <a href="https://www.halloftemplates.com/sales-atomic-emails-ai-17--e2760" target="_blank" rel="noopener">See Atomic Emails</a></p>
     </article>
 
     <article class="h" id="extractor">
-      <p class="lab">13 · Pro</p>
+      <p class="lab">13 · Next step</p>
       <h2>Turn parts into real Figma components</h2>
       <p>The sorter shows you your parts. To make them reusable components inside Figma, use the <b>atomic-extractor</b> skill for Claude. It&rsquo;s included in <b>Atomic Emails</b>, our core workshop. Claude dry-runs first, then builds a Parts page in your file: one component per part, grouped by type, ranked by reuse. The sorter reads that page in Parts mode.</p>
       <p>On a real client file it turned 392 emails into a 240-component library in two runs.</p>
@@ -212,7 +210,7 @@
       <p class="lab">15 · Help</p>
       <h2>Questions</h2>
       <h3>Do I need Emailify?</h3>
-      <p>No. Any Figma email design works. Emailify names make Atomize extra precise.</p>
+      <p>No. Any Figma email design works. Emailify names make the atomic-extractor extra precise.</p>
       <h3>Can my team use it?</h3>
       <p>Yes. Each person uses their own Figma token on their own computer. Pro is personal: one key per buyer.</p>
       <h3>Does it work on a phone?</h3>

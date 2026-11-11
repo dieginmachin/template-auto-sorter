@@ -237,8 +237,8 @@ h1 em{font-style:italic;color:var(--ink)}
 @media (max-width:460px){.lib-search input{width:80px}}
 
 /* ---------- files panel + Pro sheet ---------- */
-#panel,aside#pro{position:fixed;inset:0;z-index:40;background:rgba(22,22,20,.36);display:grid;place-items:start center;padding:72px 16px 16px;overflow:auto}
-aside#pro{z-index:45}
+#panel,aside#pro,aside#atom{position:fixed;inset:0;z-index:40;background:rgba(22,22,20,.36);display:grid;place-items:start center;padding:72px 16px 16px;overflow:auto}
+aside#pro,aside#atom{z-index:45}
 .pin{width:min(560px,100%);padding:24px;display:grid;gap:14px;animation:pop .35s var(--ease)}
 .phead{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .phead h2{font-size:32px}
@@ -332,6 +332,5 @@ article.h[hidden]{display:none}
 .demo-tag b{font-weight:500;color:#9fe0b8}
 .demo-tag .dotp{color:#3ddc84;animation:dpulse 1.6s ease-in-out infinite}
 @keyframes dpulse{50%{opacity:.25}}
-html.demo #libAtomize{display:none!important}
 html.demo .lib-score{display:none}
 @media (max-width:760px){.demo-tag{bottom:calc(170px + env(safe-area-inset-bottom,0px));font-size:10px}}

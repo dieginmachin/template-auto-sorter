@@ -104,7 +104,7 @@
     $('#mEmailN').textContent = ne; $('#mPartN').textContent = np;
     $('#libSub').textContent = [ne ? plural(ne, 'template') : '', np ? plural(np, 'part') : '', plural(SETS.length, 'file')].filter(Boolean).join(' · ');
   }
-  function atomBtn(got) { var b = $('#libAtomize'); b.hidden = mode !== 'part'; b.textContent = got && got.length ? 'Re-atomize emails' : 'Atomize emails'; }
+  function atomBtn() { var b = $('#libAtomize'); b.hidden = false; b.textContent = 'Atomize emails'; }
 
   function sid(a) { return a.file + '|' + a.id; }
   function pref(k, v) { try { if (v === undefined) return localStorage.getItem('tas:v1:' + k); localStorage.setItem('tas:v1:' + k, v); } catch (e) { return null; } }
@@ -138,7 +138,7 @@
     if (group === 'fileName' && nFiles < 2) group = MODES[m].def;
     buildSeg(); build(); buildFilters(); applyFilter(false);
     $('#libEmpty').innerHTML = N ? '<b>No ' + MODES[m].noun + 's match.</b><span>Clear the search or filters to see everything.</span>'
-      : m === 'part' ? '<b>No parts yet.</b><span>Click <i>Atomize emails</i> to break every email into organisms, molecules and atoms. Or keep your own on a page named <i>Parts</i>, with sections named <i>Atoms</i>, <i>Molecules</i> and <i>Organisms</i>, then Files → Re-sort from Figma.</span>'
+      : m === 'part' ? '<b>No parts yet.</b><span>Parts come from a page named <i>Parts</i> in your file, with sections named <i>Atoms</i>, <i>Molecules</i> and <i>Organisms</i>. The atomic-extractor skill in Atomic Emails builds it for you: <i>Atomize emails</i>. Then Files → Re-sort from Figma.</span>'
       : '<b>No email templates here.</b><span>Emails are frames 320–900px wide and taller than they are wide.</span>';
     if (isOpen) { introduced = false; lib.open(); }
   }
@@ -433,17 +433,13 @@
   function lockParts() { $('#mPart').classList.toggle('locked', !PRO.on); }
   PRO.onChange(function () { lockParts(); });
   $$('#modeSeg button').forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.m === 'part' && !PRO.gate('parts')) return; setMode(b.dataset.m); atomBtn(ALL.some(function (a) { return a.origin === 'email'; }) ? [1] : null); }); });
-  var atomizing = false;
-  async function runAtomize() {
-    if (atomizing || !PRO.gate('atomize')) return; atomizing = true; var b = $('#libAtomize'); b.disabled = true;
-    try {
-      for (var i = 0; i < SETS.length; i++) {
-        var d = SETS[i];
-        await FG.atomizeFile(d, function (n, t) { rq.hidden = false; rq.textContent = 'Atomizing ' + d.name + ' · ' + n + ' / ' + t + ' emails'; });
-      }
-      rq.hidden = true; loadAtoms(); toast('Atomized. Every email is now organisms, molecules and atoms.');
-    } catch (e) { rq.hidden = true; note(e.message, 12000); }
-    atomizing = false; b.disabled = false;
+  // Atomize is not run here any more: it is the step into Atomic Emails + the atomic-extractor skill (Nov 11, 2026)
+  var atomizing = false, atomSheet = $('#atom');
+  function runAtomize() { if (atomSheet) atomSheet.hidden = false; }
+  if (atomSheet) {
+    $('#atomX').addEventListener('click', function () { atomSheet.hidden = true; });
+    atomSheet.addEventListener('click', function (e) { if (e.target === atomSheet) atomSheet.hidden = true; });
+    addEventListener('keydown', function (e) { if (!atomSheet.hidden && e.key === 'Escape') atomSheet.hidden = true; });
   }
   $('#libAtomize').addEventListener('click', runAtomize);
   $('#libEmpty').addEventListener('click', function (e) { if (e.target.closest('i') && /Atomize/.test(e.target.textContent)) runAtomize(); });
