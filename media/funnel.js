@@ -235,4 +235,14 @@
   /* sticky bar: show after the hero */
   var bar = document.querySelector('.ub');
   if (bar) addEventListener('scroll', function () { bar.classList.toggle('show', scrollY > innerHeight * 0.7); }, { passive: true });
+
+  /* the live sample is a closed demo: its "use it on your files" buttons ask this page to show its own form */
+  addEventListener('message', function (e) {
+    if (e.origin !== 'https://dieginmachin.github.io' || !e.data || e.data.as !== 'demo-cta') return;
+    var t = document.getElementById('checkout') || document.getElementById('get');
+    if (!t) return;
+    t.scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+    var f = t.querySelector('input:not([type=hidden]):not([type=radio]):not([type=checkbox])');
+    if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, RM ? 0 : 600);
+  });
 })();

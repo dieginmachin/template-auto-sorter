@@ -644,7 +644,20 @@
     FG.store = function (k, v) { return v === undefined ? null : undefined; };
     try { Object.defineProperty(PRO, 'on', { get: function () { return true; } }); } catch (e) {}
     PRO.gate = function () { return true; };
-    $('#libMenu').addEventListener('click', function (e) { e.stopImmediatePropagation(); window.open('./', '_blank', 'noopener'); }, true);
+    // Embedded on a funnel page (iframe): a closed demo. No way into the real app or the help center;
+    // "use it on your files" asks the page around it to scroll to its own form (opt-in or checkout).
+    var embedded = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+    if (embedded) {
+      document.documentElement.classList.add('embedded');
+      var cta = function (e) { e.preventDefault(); e.stopImmediatePropagation(); try { window.parent.postMessage({ as: 'demo-cta' }, '*'); } catch (x) {} };
+      var lm = $('#libMenu'); lm.innerHTML = '<span class="mark sm" aria-hidden="true"></span> Use it on your files'; lm.addEventListener('click', cta, true);
+      var tag = document.querySelector('.demo-tag');
+      if (tag) { tag.removeAttribute('href'); tag.removeAttribute('target'); tag.setAttribute('role', 'button'); tag.tabIndex = 0; tag.lastElementChild.textContent = 'Use it on your files'; tag.addEventListener('click', cta, true); tag.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') cta(e); }); }
+      Array.prototype.forEach.call(document.querySelectorAll('a[href^="help.html"], a[href="./"]'), function (a) { a.removeAttribute('href'); a.style.display = 'none'; });
+      var buy = $('#proBuy'); if (buy) { buy.removeAttribute('target'); buy.addEventListener('click', function (e) { PRO.close(); cta(e); }, true); }
+    } else {
+      $('#libMenu').addEventListener('click', function (e) { e.stopImmediatePropagation(); window.open('./', '_blank', 'noopener'); }, true);
+    }
     // the sample shows as a sample: no file name, no Figma links
     D.data.name = 'Sample library';
     D.data.items.forEach(function (x) { x.fileName = 'Sample library'; });

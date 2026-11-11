@@ -334,6 +334,7 @@ article.h[hidden]{display:none}
 @keyframes dpulse{50%{opacity:.25}}
 html.demo .lib-score{display:none}
 html.demo #lbOpen{display:none!important}
+html.embedded .demo-tag{cursor:pointer}
 .free-note{margin:6px 0 0;font:400 12px/1.5 var(--mono);color:var(--ink-3)}
 html.is-pro .free-note{display:none}
 html:not(.is-pro) .chk-rem{display:none}
