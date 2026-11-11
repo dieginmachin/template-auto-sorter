@@ -69,7 +69,7 @@ h1 em{font-style:italic;color:var(--ink)}
 .csteps{list-style:none;margin:0;padding:0;display:grid;gap:22px;counter-reset:s}
 .csteps>li{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
 .csteps>li::before{counter-increment:s;content:counter(s,decimal-leading-zero);font:500 11px/1 var(--mono);letter-spacing:.1em;color:var(--ink-3);padding-top:4px}
-.csteps>li>.chk{grid-column:2}
+.csteps>li>.chk,.csteps>li>.free-note{grid-column:2}
 .f{display:grid;gap:7px;min-width:0}
 .f label{font-size:15px;font-weight:500}
 .f small{font-size:13px;color:var(--ink-3);line-height:1.55}
@@ -104,7 +104,7 @@ h1 em{font-style:italic;color:var(--ink)}
 .ft a:hover,.ft .link-btn:hover{color:var(--ink)}
 .ft nav{display:flex;flex-wrap:wrap;gap:18px}
 @media (max-width:920px){.cwrap{grid-template-columns:1fr;gap:40px;padding-top:40px}.cform{position:static}}
-@media (max-width:560px){.cform{padding:20px}.csteps>li{grid-template-columns:1fr}.csteps>li::before{display:none}.csteps>li>.chk{grid-column:1}.who span{display:none}.bar .chip.hide-s{display:none}}
+@media (max-width:560px){.cform{padding:20px}.csteps>li{grid-template-columns:1fr}.csteps>li::before{display:none}.csteps>li>.chk,.csteps>li>.free-note{grid-column:1}.who span{display:none}.bar .chip.hide-s{display:none}}
 
 /* ---------- the library (the portfolio's endless canvas) ---------- */
 #lib{position:fixed;inset:0;z-index:20;background:var(--canvas);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;color:var(--ink)}
@@ -333,4 +333,8 @@ article.h[hidden]{display:none}
 .demo-tag .dotp{color:#3ddc84;animation:dpulse 1.6s ease-in-out infinite}
 @keyframes dpulse{50%{opacity:.25}}
 html.demo .lib-score{display:none}
+html.demo #lbOpen{display:none!important}
+.free-note{margin:6px 0 0;font:400 12px/1.5 var(--mono);color:var(--ink-3)}
+html.is-pro .free-note{display:none}
+html:not(.is-pro) .chk-rem{display:none}
 @media (max-width:760px){.demo-tag{bottom:calc(170px + env(safe-area-inset-bottom,0px));font-size:10px}}

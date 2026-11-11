@@ -645,6 +645,10 @@
     try { Object.defineProperty(PRO, 'on', { get: function () { return true; } }); } catch (e) {}
     PRO.gate = function () { return true; };
     $('#libMenu').addEventListener('click', function (e) { e.stopImmediatePropagation(); window.open('./', '_blank', 'noopener'); }, true);
+    // the sample shows as a sample: no file name, no Figma links
+    D.data.name = 'Sample library';
+    D.data.items.forEach(function (x) { x.fileName = 'Sample library'; });
+    (D.parts || []).forEach(function (x) { x.fileName = 'Sample library'; });
     openLibrary([D.data]);
     // open on something readable: fly into the first group once the canvas has settled
     setTimeout(function () { var b = document.querySelector('#libChips button'); if (b) b.click(); }, 1400);

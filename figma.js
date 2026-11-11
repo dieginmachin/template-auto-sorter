@@ -1,13 +1,22 @@
 /* Template Auto-Sorter: Figma REST client.
    The only network calls this app makes go to https://api.figma.com, with the token the user typed.
-   The token and the cached file data stay in this browser (localStorage, or sessionStorage if "remember" is off). */
+   Free: the token and the sorted file stay in this tab only (sessionStorage). Pro: kept on this device (localStorage + IndexedDB). */
 (function (root) {
   'use strict';
   var API = 'https://api.figma.com/v1';
   var NS = 'tas:v1:';
   var IMG_TTL = 20 * 864e5; // Figma image URLs live up to 30 days
 
-  function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(NS + k) || 'null'); if (v === null) localStorage.removeItem(NS + k); else localStorage.setItem(NS + k, JSON.stringify(v)); } catch (e) { return null; } }
+  // Free runs for this session only: files, thumbnails and the token live in sessionStorage and go when the tab closes.
+  // Pro keeps the library on this device (localStorage + IndexedDB).
+  function isPro() { try { return !!(root.PRO && root.PRO.on); } catch (e) { return false; } }
+  function box() { return isPro() ? localStorage : sessionStorage; }
+  function store(k, v) { try { var b = box(); if (v === undefined) return JSON.parse(b.getItem(NS + k) || 'null'); if (v === null) b.removeItem(NS + k); else b.setItem(NS + k, JSON.stringify(v)); } catch (e) { return null; } }
+  // a free user's library from before this change is cleared, so free never keeps anything between visits
+  (function purgeFree() {
+    if (isPro()) return;
+    try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf(NS) === 0 && /^(data:|img:|files$|seen$|token$)/.test(k.slice(NS.length))) localStorage.removeItem(k); }); } catch (e) {}
+  })();
 
   /* ---------- token ---------- */
   function token() {
@@ -16,7 +25,7 @@
   function setToken(t, remember) {
     try {
       localStorage.removeItem(NS + 'token'); sessionStorage.removeItem(NS + 'token');
-      if (t) (remember ? localStorage : sessionStorage).setItem(NS + 'token', t.trim());
+      if (t) (remember && isPro() ? localStorage : sessionStorage).setItem(NS + 'token', t.trim());
     } catch (e) {}
   }
 
@@ -193,7 +202,7 @@
     if (again.length) { emails = again; again = []; i = 0; retrying = true; await worker(0); }
     var parts = TAS.dedupe(raw);
     var out = { key: data.key, savedAt: Date.now(), emails: total, missing: missing, found: raw.length, parts: parts };
-    await idb.set('atoms:' + data.key, out);
+    if (isPro()) await idb.set('atoms:' + data.key, out);
     return out;
   }
   // a tiny IndexedDB key-value store: atomized libraries are too big for localStorage
