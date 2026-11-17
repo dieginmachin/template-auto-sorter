@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Auto-Sorter Help</title>
-<meta name="description" content="How to connect a Figma file, name your library so it sorts perfectly, use the canvas, unlock Pro and fix common problems.">
+<meta name="description" content="How to connect a Figma file, name your library so it sorts perfectly, use the canvas, install Pro in Claude and fix common problems.">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23161614'/%3E%3Crect x='7' y='7' width='8' height='11' rx='2' fill='%23fff'/%3E%3Crect x='17' y='7' width='8' height='7' rx='2' fill='%23fff' opacity='.7'/%3E%3Crect x='17' y='16' width='8' height='9' rx='2' fill='%23fff'/%3E%3Crect x='7' y='20' width='8' height='5' rx='2' fill='%23fff' opacity='.7'/%3E%3C/svg%3E">
@@ -28,7 +28,7 @@
     <p class="lab">The canvas</p>
     <a href="#canvas">Moving around</a><a href="#groups">Groups and filters</a>
     <p class="lab">Pro</p>
-    <a href="#pro">What Pro adds</a><a href="#parts">The parts library</a><a href="#atomize">Atomize emails</a><a href="#extractor">Parts as Figma components</a>
+    <a href="#pro">What Pro adds</a><a href="#install">Install in Claude</a><a href="#parts">The parts library</a><a href="#atomize">Atomize emails</a><a href="#extractor">Parts as Figma components</a>
     <p class="lab">Help</p>
     <a href="#trouble">Troubleshooting</a><a href="#faq">Questions</a>
   </nav>
@@ -78,7 +78,7 @@
         <li><b>No server.</b> The sorter is a static web page. Your browser talks to Figma directly; nothing passes through us.</li>
         <li><b>No account, no tracking.</b> We don&rsquo;t see your files, your token, your designs or how you use the app.</li>
         <li><b>Read-only.</b> It never writes to your Figma file.</li>
-        <li><b>Stored locally.</b> Your sorted library, thumbnails and Pro unlock are saved in this browser&rsquo;s storage. Clearing site data removes them.</li>
+        <li><b>Stored locally.</b> Your sorted library and thumbnails are saved in this browser&rsquo;s storage. Clearing site data removes them.</li>
       </ul>
       <p>Client files are safe to sort. Just keep in mind that anyone using your computer and browser can open the library you sorted there.</p>
     </article>
@@ -140,7 +140,7 @@
 
     <article class="h" id="pro">
       <p class="lab">10 · Pro</p>
-      <h2>What Pro adds, and how to unlock it</h2>
+      <h2>What Pro adds, and how to install it</h2>
       <table>
         <thead><tr><th></th><th>Free</th><th>Pro · from $29</th></tr></thead>
         <tbody>
@@ -151,12 +151,23 @@
                     <tr><td>Future Studio App features</td><td>No</td><td>✓</td></tr>
         </tbody>
       </table>
-      <h3>Unlock</h3>
+      <p>Pro is a Claude skill with everything on. There is no key. The download link is in your receipt email, <b>Your Auto-Sorter Pro skill</b>. Bought Atomic Emails with the Auto-Sorter add-on? The link is in your add-on email.</p>
+      <h3 id="install">Install in Claude Code</h3>
       <ol>
-        <li>Your Pro key is in your receipt email and on your access page. It looks like <code>HOT-SORT-XXXX-XXXX</code>.</li>
-        <li>Open the sorter, click <b>Pro</b> (top right of the start screen, or any Pro feature), paste the key and click <b>Unlock</b>. The &ldquo;Unlock in one click&rdquo; button on your access page does the same.</li>
+        <li><b>Download the zip</b> from your email. Leave it in Downloads. Don&rsquo;t unzip it.</li>
+        <li><b>Install it.</b> Open Claude Code and paste: <i>Install the Claude skill in my Downloads folder called template-auto-sorter-pro-skill.zip.</i> Say yes when Claude asks to run a command. Or in the Terminal: <code>mkdir -p ~/.claude/skills &amp;&amp; unzip -oq ~/Downloads/template-auto-sorter-pro-skill.zip -d ~/.claude/skills</code></li>
+        <li><b>Connect Figma, once.</b> In the Terminal: <code>claude mcp add --transport http --scope user figma https://mcp.figma.com/mcp</code>. Then in Claude Code type <code>/mcp</code>, pick <b>figma</b>, choose <b>Authenticate</b> and sign in to Figma.</li>
+        <li><b>Run it.</b> Type <code>/template-auto-sorter</code>. Not there? Type <code>/reload-skills</code> once.</li>
       </ol>
-      <p>Pro is remembered per browser. On a new computer or browser, paste the key once more. Bought Atomic Emails with the Auto-Sorter add-on? Your key is on that access page too.</p>
+      <p>Pro replaces the free skill if you have it: same name, same folder. On another computer, install the same zip there.</p>
+      <h3>Install in the Claude app</h3>
+      <ol>
+        <li>Settings, Capabilities: turn on <b>Code execution and file creation</b>.</li>
+        <li>Customize, Skills, <b>+</b>, <b>Create skill</b>, <b>Upload a skill</b>, and pick the zip. Remove the free Auto-Sorter skill first if you added it.</li>
+        <li>Settings, Connectors: add <b>Figma</b> and sign in.</li>
+        <li>In a new chat, type: <i>Run the Auto-Sorter.</i></li>
+      </ol>
+      <p>Already had Pro on in this web app from before? It stays on in that browser.</p>
     </article>
 
     <article class="h" id="parts">
@@ -203,7 +214,7 @@
       <h3>&ldquo;Figma asked us to slow down&rdquo;</h3>
       <p>Figma limits how many requests a token makes per minute. The sorter waits and carries on by itself; leave the tab open.</p>
       <h3>My library or Pro disappeared</h3>
-      <p>Browser data was cleared, or you&rsquo;re on another browser or computer. Sort again and paste your Pro key once more.</p>
+      <p>Browser data was cleared, or you&rsquo;re on another browser or computer. Sort again. Pro now runs in Claude: <a href="#install">install the Pro skill</a> from your receipt email.</p>
     </article>
 
     <article class="h" id="faq">
@@ -212,7 +223,7 @@
       <h3>Do I need Emailify?</h3>
       <p>No. Any Figma email design works. Emailify names make the atomic-extractor extra precise.</p>
       <h3>Can my team use it?</h3>
-      <p>Yes. Each person uses their own Figma token on their own computer. Pro is personal: one key per buyer.</p>
+      <p>Yes. Each person uses their own Figma token on their own computer. Pro is personal: one Pro skill per buyer.</p>
       <h3>Does it work on a phone?</h3>
       <p>It opens on a phone or tablet, but sorting and browsing a big library is best on a laptop.</p>
       <h3>Refunds?</h3>

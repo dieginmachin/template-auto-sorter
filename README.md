@@ -70,7 +70,7 @@ Read me page, an Emails page (sections "Acme Co" and "Bluleaf", 6 emails built f
 
 - `index.html`: markup and CSP
 - `app.css`: Studio Apps styling (greige paper, ink, Newsreader, Geist + Geist Mono), shared by the help center
-- `pro.js`: Free/Pro. A key (`HOT-SORT-XXXX-XXXX`) unlocks Pro in the browser; only SHA-256 hashes live here. `…/#pro=KEY` unlocks in one click. Free = one file, Emails mode; Pro adds more files and Parts mode (the Atomize button opens the Atomic Emails step)
+- `pro.js`: Free/Pro. Since Nov 18, 2026 Pro ships as a Claude skill and nobody gets a key; the old key hashes stay so browsers unlocked before (and old `…/#pro=KEY` links) keep Pro. The Pro skill zip turns Pro on locally with `app/pro-local.js`. Free = one file, Emails mode; Pro adds more files and Parts mode (the Atomize button opens the Atomic Emails step)
 - `help.html`, `help.js`: the help center (15 articles, search)
 - `next/`: staging copy for the next release (same origin, so it shares the cache and token)
 - `app.js`: connect screen, the canvas (after the portfolio's template library), filters, viewer, files panel
